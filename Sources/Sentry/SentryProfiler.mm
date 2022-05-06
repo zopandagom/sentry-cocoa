@@ -206,7 +206,7 @@ isSimulatorBuild()
         const auto debugImageDict = [NSMutableDictionary<NSString *, id> dictionary];
         debugImageDict[@"type"] = @"macho";
         debugImageDict[@"debug_id"] = debugImage.uuid;
-        debugImageDict[@"debug_file"] = debugImage.name
+        debugImageDict[@"debug_file"] = debugImage.name;
         debugImageDict[@"image_addr"] = debugImage.imageAddress;
         debugImageDict[@"image_size"] = debugImage.imageSize;
         debugImageDict[@"image_vmaddr"] = debugImage.imageVmAddress;
