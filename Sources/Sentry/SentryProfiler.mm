@@ -203,14 +203,13 @@ isSimulatorBuild()
     const auto debugImages = [NSMutableArray<NSDictionary<NSString *, id> *> new];
     const auto debugMeta = [_debugImageProvider getDebugImages];
     for (SentryDebugMeta *debugImage in debugMeta) {
-        [debugImages addObject:@{
-            @"type": @"macho",
-            @"debug_id": debugImage.uuid,
-            @"debug_file": debugImage.name,
-            @"image_addr": debugImage.imageAddress,
-            @"image_size": debugImage.imageSize,
-            @"image_vmaddr": debugImage.imageVmAddress
-        }];
+        const auto debugImageDict = [NSMutableDictionary<NSString *, id> dictionary];
+        debugImageDict[@"type"] = @"macho";
+        debugImageDict[@"debug_id"] = debugImage.uuid;
+        debugImageDict[@"debug_file"] = debugImage.name
+        debugImageDict[@"image_addr"] = debugImage.imageAddress;
+        debugImageDict[@"image_size"] = debugImage.imageSize;
+        debugImageDict[@"image_vmaddr"] = debugImage.imageVmAddress;
     }
     if (debugImages.count > 0) {
         profile[@"debug_meta"] = @{ @"images" : debugImages };
