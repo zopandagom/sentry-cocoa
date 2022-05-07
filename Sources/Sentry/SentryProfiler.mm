@@ -210,6 +210,7 @@ isSimulatorBuild()
         debugImageDict[@"image_addr"] = debugImage.imageAddress;
         debugImageDict[@"image_size"] = debugImage.imageSize;
         debugImageDict[@"image_vmaddr"] = debugImage.imageVmAddress;
+        [debugImages addObject:debugImageDict];
     }
     if (debugImages.count > 0) {
         profile[@"debug_meta"] = @{ @"images" : debugImages };
