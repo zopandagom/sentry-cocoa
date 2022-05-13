@@ -38,7 +38,7 @@ namespace profiling {
          * threadID upon failure, which means that metadata cannot be collected
          * for this thread.
          */
-        ThreadMetadata metadataForThread(const ThreadHandle &thread);
+        NEVER_INLINE ThreadMetadata metadataForThread(const ThreadHandle &thread);
 
         /**
          * Returns the metadata for the queue at the specified address.
@@ -47,13 +47,13 @@ namespace profiling {
          * entry exists, or an empty @c QueueMetadata with the address set to 0 if it
          * does not exist.
          */
-        QueueMetadata metadataForQueue(std::uint64_t address) const;
+        NEVER_INLINE QueueMetadata metadataForQueue(std::uint64_t address) const;
         
         /**
          * Stores metadata for the queue at the address specified in `metadata.address`
          * @param metadata The metadata to associate with the queue.
          */
-        void setQueueMetadata(QueueMetadata metadata);
+        NEVER_INLINE void setQueueMetadata(QueueMetadata metadata);
 
         ThreadMetadataCache() = default;
         ThreadMetadataCache(const ThreadMetadataCache &) = delete;
