@@ -148,15 +148,15 @@ static NSLock *profilerLock;
         }
 #endif
 #if SENTRY_TARGET_PROFILING_SUPPORTED
-        if ([_hub getClient].options.enableProfiling) {
-            [profilerLock lock];
-            if (profiler == nil) {
-                profiler = [[SentryProfiler alloc] init];
-                [SentryLog logWithMessage:@"Starting profiler." andLevel:kSentryLevelDebug];
-                [profiler start];
-            }
-            [profilerLock unlock];
-        }
+//        if ([_hub getClient].options.enableProfiling) {
+//            [profilerLock lock];
+//            if (profiler == nil) {
+//                profiler = [[SentryProfiler alloc] init];
+//                [SentryLog logWithMessage:@"Starting profiler." andLevel:kSentryLevelDebug];
+//                [profiler start];
+//            }
+//            [profilerLock unlock];
+//        }
 #endif
     }
 

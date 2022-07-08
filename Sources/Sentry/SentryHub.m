@@ -18,6 +18,7 @@
 #import "SentryTracesSampler.h"
 #import "SentryTransaction.h"
 #import "SentryTransactionContext.h"
+#import "SentryProfiler.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -34,6 +35,7 @@ SentryHub ()
 
 @implementation SentryHub {
     NSObject *_sessionLock;
+    SentryProfiler *_profiler;
 }
 
 - (instancetype)initWithClient:(nullable SentryClient *)client
@@ -47,6 +49,7 @@ SentryHub ()
         _crashWrapper = [SentryCrashWrapper sharedInstance];
         _sampler = [[SentryTracesSampler alloc] initWithOptions:client.options];
         _currentDateProvider = [SentryDefaultCurrentDateProvider sharedInstance];
+        _profiler = [[SentryProfiler alloc] init];
     }
     return self;
 }
@@ -66,6 +69,7 @@ SentryHub ()
 
 - (void)startSession
 {
+    [_profiler start];
     SentrySession *lastSession = nil;
     SentryScope *scope = self.scope;
     SentryOptions *options = [_client options];
@@ -103,6 +107,7 @@ SentryHub ()
 
 - (void)endSessionWithTimestamp:(NSDate *)timestamp
 {
+    [_profiler stop];
     SentrySession *currentSession = nil;
     @synchronized(_sessionLock) {
         currentSession = _session;
