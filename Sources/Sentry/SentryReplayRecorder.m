@@ -188,14 +188,19 @@ UIButton (SentryReplay)
 
 - (void)startRecording
 {
-    NSLog(@"[REPLAY] STARTING RECORDING");
     NSNotificationCenter *const nc = [NSNotificationCenter defaultCenter];
     [nc addObserver:self
            selector:@selector(windowDidBecomeKey:)
                name:UIWindowDidBecomeKeyNotification
              object:nil];
-    swizzleLayoutSubviews(
-        ^(UIView *swizzeldSelf) { NSLog(@"[REPLAY] RELAYOUT %@", swizzeldSelf); });
+//    swizzleLayoutSubviews(
+//        ^(UIView *swizzeldSelf) { NSLog(@"[REPLAY] RELAYOUT %@", swizzeldSelf); });
+    swizzleDidAddSubview(^(UIView *__unsafe_unretained superview, UIView *subview) {
+        NSLog(@"[REPLAY] PARENT %@ ADDED %@", superview, subview);
+    });
+    swizzleWillRemoveSubview(^(UIView *__unsafe_unretained superview, UIView *subview) {
+        NSLog(@"[REPLAY] PARENT %@ REMOVED %@", superview, subview);
+    });
 }
 
 - (void)stopRecording
@@ -233,12 +238,12 @@ static void *kNodeIDAssociatedObjectKey = &kNodeIDAssociatedObjectKey;
     NSMutableArray<NSDictionary<NSString *, id> *> *const replay =
         [NSMutableArray<NSDictionary<NSString *, id> *> array];
     const CGRect screenBounds = window.screen.bounds;
-    const NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970];
+    NSNumber *const timestamp = getCurrentTimestamp();
     [replay addObject:@{
         @"type" : @4,
         @"data" :
             @ { @"width" : @(screenBounds.size.width), @"height" : @(screenBounds.size.height) },
-        @"timestamp" : @((NSUInteger)timestamp),
+        @"timestamp" : timestamp,
     }];
     NSNumber *const screenID = [self idForNode:window.screen];
     NSMutableArray<NSDictionary<NSString *, id> *> *const childNodes =
@@ -256,7 +261,7 @@ static void *kNodeIDAssociatedObjectKey = &kNodeIDAssociatedObjectKey;
                 @"id" : screenID,
             }
         },
-        @"timestamp" : @((NSUInteger)timestamp)
+        @"timestamp" : timestamp
     }];
 
     NSData *data = [NSJSONSerialization dataWithJSONObject:replay options:0 error:nil];
@@ -299,20 +304,60 @@ static void *kNodeIDAssociatedObjectKey = &kNodeIDAssociatedObjectKey;
 //     return nil;
 // }
 
-static void
-swizzleLayoutSubviews(void (^block)(__unsafe_unretained UIView *))
-{
-    const SEL selector = @selector(layoutSubviews);
+//static void
+//swizzleLayoutSubviews(void (^block)(__unsafe_unretained UIView *))
+//{
+//    const SEL selector = @selector(layoutSubviews);
+//    [SentrySwizzle
+//        swizzleInstanceMethod:selector
+//                      inClass:[UIView class]
+//                newImpFactory:^id(SentrySwizzleInfo *swizzleInfo) {
+//                    return ^void(__unsafe_unretained id self) {
+//                        void (*originalIMP)(__unsafe_unretained id, SEL);
+//                        originalIMP
+//                            = (__typeof(originalIMP))[swizzleInfo getOriginalImplementation];
+//                        originalIMP(self, selector);
+//                        block((UIView *)self);
+//                    };
+//                }
+//                         mode:SentrySwizzleModeAlways
+//                          key:NULL];
+//}
+
+static NSNumber *getCurrentTimestamp() {
+    return @([[NSDate date] timeIntervalSince1970]);
+}
+
+static void swizzleDidAddSubview(void (^block)(__unsafe_unretained UIView *superview, UIView *subview)) {
+    const SEL selector = @selector(didAddSubview:);
     [SentrySwizzle
         swizzleInstanceMethod:selector
                       inClass:[UIView class]
                 newImpFactory:^id(SentrySwizzleInfo *swizzleInfo) {
-                    return ^void(__unsafe_unretained id self) {
-                        void (*originalIMP)(__unsafe_unretained id, SEL);
+                    return ^void(__unsafe_unretained id self, id subview) {
+                        void (*originalIMP)(__unsafe_unretained id, SEL, id);
                         originalIMP
                             = (__typeof(originalIMP))[swizzleInfo getOriginalImplementation];
-                        originalIMP(self, selector);
-                        block((UIView *)self);
+                        originalIMP(self, selector, subview);
+                        block((UIView *)self, (UIView *)subview);
+                    };
+                }
+                         mode:SentrySwizzleModeAlways
+                          key:NULL];
+}
+
+static void swizzleWillRemoveSubview(void (^block)(__unsafe_unretained UIView *superview, UIView *subview)) {
+    const SEL selector = @selector(willRemoveSubview:);
+    [SentrySwizzle
+        swizzleInstanceMethod:selector
+                      inClass:[UIView class]
+                newImpFactory:^id(SentrySwizzleInfo *swizzleInfo) {
+                    return ^void(__unsafe_unretained id self, id subview) {
+                        void (*originalIMP)(__unsafe_unretained id, SEL, id);
+                        originalIMP
+                            = (__typeof(originalIMP))[swizzleInfo getOriginalImplementation];
+                        originalIMP(self, selector, subview);
+                        block((UIView *)self, (UIView *)subview);
                     };
                 }
                          mode:SentrySwizzleModeAlways
