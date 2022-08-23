@@ -12,6 +12,8 @@
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 static NSDictionary<NSString *, id> *
 serializeCGPoint(CGPoint point)
 {
@@ -104,6 +106,42 @@ serializeTextAlignment(NSTextAlignment alignment)
     }
 }
 
+static void *kNodeIDAssociatedObjectKey = &kNodeIDAssociatedObjectKey;
+
+@interface SentryReplayNodeIDGenerator : NSObject
+- (NSNumber *)idForNode:(nullable id)node;
+@end
+
+@implementation SentryReplayNodeIDGenerator {
+    NSUInteger _nodeID;
+}
+
+- (instancetype)init {
+    if (self = [super init]) {
+        _nodeID = 0;
+    }
+    return self;
+}
+
+- (NSNumber *)idForNode:(nullable id)node {
+    if (node == nil) {
+        return nil;
+    }
+    NSNumber *nodeID = objc_getAssociatedObject(node, kNodeIDAssociatedObjectKey);
+    if (nodeID == nil) {
+        nodeID = [self nextNodeID];
+        objc_setAssociatedObject(
+            node, kNodeIDAssociatedObjectKey, nodeID, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    return nodeID;
+}
+
+- (NSNumber *)nextNodeID {
+    return @(++_nodeID);
+}
+
+@end
+
 @protocol SentryIntrospectableView <NSObject>
 - (NSDictionary<NSString *, id> *)introspect_getAttributes;
 @end
@@ -119,7 +157,9 @@ UIView (SentryReplay)
     NSMutableDictionary<NSString *, id> *const attributes =
         [NSMutableDictionary<NSString *, id> dictionary];
     attributes[@"frame"] = serializeCGRect(self.frame);
-    if (self.alpha != 1.0) {
+    if (self.isHidden || self.alpha == 0.0) {
+        attributes[@"isHidden"] = @YES;
+    } else if (self.alpha != 1.0) {
         attributes[@"alpha"] = @(self.alpha);
     }
     if (self.contentMode != UIViewContentModeScaleToFill) {
@@ -174,85 +214,136 @@ UIButton (SentryReplay)
 }
 @end
 
-@implementation SentryReplayRecorder {
-    NSUInteger _nodeID;
+typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
+    SentryReplayMutationTypeAddView,
+    SentryReplayMutationTypeRemoveView,
+    SentryReplayMutationTypeLayoutView
+};
+
+@interface SentryReplayMutation : NSObject
+@property (nonatomic, assign, readonly) SentryReplayMutationType mutationType;
+@property (nonatomic, strong, readonly, nonnull) NSNumber *nodeID;
+@property (nonatomic, strong, readonly, nullable) NSNumber *parentID;
+@property (nonatomic, strong, readonly, nullable) NSNumber *nextID;
+@property (nonatomic, strong, readonly) NSDictionary<NSString *, id> *attributes;
+
++ (instancetype)addView:(UIView *)view
+        nodeIDGenerator:(SentryReplayNodeIDGenerator *)nodeIDGenerator;
++ (instancetype)removeView:(UIView *)view
+           nodeIDGenerator:(SentryReplayNodeIDGenerator *)nodeIDGenerator;
++ (instancetype)layoutView:(UIView *)view
+           nodeIDGenerator:(SentryReplayNodeIDGenerator *)nodeIDGenerator;
+
+@end
+
+@implementation SentryReplayMutation
+
++ (instancetype)addView:(UIView *)view
+        nodeIDGenerator:(SentryReplayNodeIDGenerator *)nodeIDGenerator {
+    return [[self alloc] initWithMutationType:SentryReplayMutationTypeAddView view:view nodeIDGenerator:nodeIDGenerator];
 }
 
-- (instancetype)init
-{
++ (instancetype)removeView:(UIView *)view
+           nodeIDGenerator:(SentryReplayNodeIDGenerator *)nodeIDGenerator {
+    return [[self alloc] initWithMutationType:SentryReplayMutationTypeRemoveView view:view nodeIDGenerator:nodeIDGenerator];
+}
+
++ (instancetype)layoutView:(UIView *)view
+           nodeIDGenerator:(SentryReplayNodeIDGenerator *)nodeIDGenerator{
+    return [[self alloc] initWithMutationType:SentryReplayMutationTypeLayoutView view:view nodeIDGenerator:nodeIDGenerator];
+}
+
+- (instancetype)initWithMutationType:(SentryReplayMutationType)mutationType
+                                view:(UIView *)view
+                     nodeIDGenerator:(SentryReplayNodeIDGenerator *)nodeIDGenerator {
     if (self = [super init]) {
-        _nodeID = 0;
+        _mutationType = mutationType;
+        _nodeID = [nodeIDGenerator idForNode:view];
+        _parentID = [nodeIDGenerator idForNode:view.superview];
+        NSArray<UIView *> *const subviews = view.superview.subviews;
+        if (subviews.count > 1) {
+            const NSUInteger index = [subviews indexOfObjectIdenticalTo:view];
+            if (index < (subviews.count - 1)) {
+                _nextID = [nodeIDGenerator idForNode:subviews[index + 1]];
+            }
+        }
+        _attributes = [view introspect_getAttributes];
     }
     return self;
 }
 
+@end
+
+@implementation SentryReplayRecorder {
+    NSMutableDictionary<NSNumber *, NSMutableArray<SentryReplayMutation *> *> *_mutations;
+    NSMutableArray<NSDictionary<NSString *, id> *> *_replay;
+    BOOL _isRecording;
+}
+
 - (void)startRecording
 {
+    if (_isRecording) {
+        return;
+    }
+    _isRecording = YES;
     NSNotificationCenter *const nc = [NSNotificationCenter defaultCenter];
     [nc addObserver:self
            selector:@selector(windowDidBecomeKey:)
                name:UIWindowDidBecomeKeyNotification
              object:nil];
-//    swizzleLayoutSubviews(
-//        ^(UIView *swizzeldSelf) { NSLog(@"[REPLAY] RELAYOUT %@", swizzeldSelf); });
-    swizzleDidAddSubview(^(UIView *__unsafe_unretained superview, UIView *subview) {
-        NSLog(@"[REPLAY] PARENT %@ ADDED %@", superview, subview);
+    
+    __weak __typeof__(self) weakSelf = self;
+    swizzleLayoutSubviews(
+        ^(UIView *view) {
+            [weakSelf appendMutation:
+             [[SentryReplayMutation alloc] initWithMutationType:SentryReplayMutationTypeLayoutView
+                                                           view:view
+                                                nodeIDGenerator:sharedNodeIDGenerator()]
+                           timestamp:getCurrentTimestamp()];
     });
-    swizzleWillRemoveSubview(^(UIView *__unsafe_unretained superview, UIView *subview) {
-        NSLog(@"[REPLAY] PARENT %@ REMOVED %@", superview, subview);
+    swizzleDidAddSubview(^(__unused UIView *__unsafe_unretained superview, UIView *subview) {
+        [weakSelf appendMutation:
+         [[SentryReplayMutation alloc] initWithMutationType:SentryReplayMutationTypeAddView
+                                                       view:subview
+                                            nodeIDGenerator:sharedNodeIDGenerator()]
+                       timestamp:getCurrentTimestamp()];
     });
-}
-
-- (void)stopRecording
-{
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-}
-
-- (void)windowDidBecomeKey:(NSNotification *)notification
-{
-    UIWindow *const keyWindow = (UIWindow *)notification.object;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)),
-        dispatch_get_main_queue(), ^{ [self serializeReplayForWindow:keyWindow]; });
-}
-
-- (NSUInteger)nextNodeID
-{
-    return ++_nodeID;
-}
-
-static void *kNodeIDAssociatedObjectKey = &kNodeIDAssociatedObjectKey;
-
-- (NSNumber *)idForNode:(id)node
-{
-    NSNumber *nodeID = objc_getAssociatedObject(node, kNodeIDAssociatedObjectKey);
-    if (nodeID == nil) {
-        nodeID = @([self nextNodeID]);
-        objc_setAssociatedObject(
-            node, kNodeIDAssociatedObjectKey, nodeID, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    swizzleWillRemoveSubview(^(__unused UIView *__unsafe_unretained superview, UIView *subview) {
+        [weakSelf appendMutation:
+         [[SentryReplayMutation alloc] initWithMutationType:SentryReplayMutationTypeRemoveView
+                                                       view:subview
+                                            nodeIDGenerator:sharedNodeIDGenerator()]
+                       timestamp:getCurrentTimestamp()];
+    });
+    
+    UIWindow *const keyWindow = getKeyWindow();
+    if (keyWindow != nil) {
+        [self recordInitialState:keyWindow];
     }
-    return nodeID;
 }
 
-- (void)serializeReplayForWindow:(UIWindow *)window
-{
-    NSMutableArray<NSDictionary<NSString *, id> *> *const replay =
+- (void)recordInitialState:(UIWindow *)keyWindow {
+    _mutations = [NSMutableDictionary<NSNumber *, NSMutableArray<SentryReplayMutation *> *> dictionary];
+    _replay =
         [NSMutableArray<NSDictionary<NSString *, id> *> array];
-    const CGRect screenBounds = window.screen.bounds;
+    
+    const CGRect screenBounds = keyWindow.screen.bounds;
     NSNumber *const timestamp = getCurrentTimestamp();
-    [replay addObject:@{
+    [_replay addObject:@{
         @"type" : @4,
         @"data" :
             @ { @"width" : @(screenBounds.size.width), @"height" : @(screenBounds.size.height) },
         @"timestamp" : timestamp,
     }];
-    NSNumber *const screenID = [self idForNode:window.screen];
+    
+    NSNumber *const screenID = [sharedNodeIDGenerator() idForNode:keyWindow.screen];
     NSMutableArray<NSDictionary<NSString *, id> *> *const childNodes =
         [NSMutableArray<NSDictionary<NSString *, id> *> array];
-    NSDictionary<NSString *, id> *const serializedWindow = [self serializeViewHierarchy:window];
+    NSDictionary<NSString *, id> *const serializedWindow = [self serializeViewHierarchy:keyWindow];
     if (serializedWindow != nil) {
         [childNodes addObject:serializedWindow];
     }
-    [replay addObject:@{
+    [_replay addObject:@{
         @"type" : @2,
         @"data" : @ {
             @"node" : @ {
@@ -263,22 +354,44 @@ static void *kNodeIDAssociatedObjectKey = &kNodeIDAssociatedObjectKey;
         },
         @"timestamp" : timestamp
     }];
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)),
+        dispatch_get_main_queue(), ^{ [self stopRecording]; });
+}
 
-    NSData *data = [NSJSONSerialization dataWithJSONObject:replay options:0 error:nil];
+- (void)stopRecording
+{
+    if (!_isRecording) {
+        return;
+    }
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    
+    NSData *data = [NSJSONSerialization dataWithJSONObject:_replay options:0 error:nil];
     NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:@"replay.json"];
     [data writeToFile:path atomically:YES];
     NSLog(@"[REPLAY] PATH: %@", path);
+    
+    _replay = nil;
+    _mutations = nil;
+    _isRecording = NO;
+}
+
+- (void)windowDidBecomeKey:(NSNotification *)notification
+{
+    if (_isRecording && _replay == nil) {
+        [self recordInitialState:notification.object];
+    }
 }
 
 - (NSDictionary<NSString *, id> *)serializeViewHierarchy:(UIView *)view
 {
-    if (view == nil || view.isHidden || view.alpha == 0.0) {
+    if (view == nil) {
         return nil;
     }
     NSMutableDictionary<NSString *, id> *const node =
         [NSMutableDictionary<NSString *, id> dictionary];
     node[@"type"] = @2;
-    node[@"id"] = [self idForNode:view];
+    node[@"id"] = [sharedNodeIDGenerator() idForNode:view];
     node[@"viewClass"] = NSStringFromClass(view.class);
     node[@"attributes"] = [view introspect_getAttributes];
 
@@ -294,38 +407,59 @@ static void *kNodeIDAssociatedObjectKey = &kNodeIDAssociatedObjectKey;
     return node;
 }
 
-// static UIWindow *getKeyWindow() {
-//     SentryUIApplication *const app = [[SentryUIApplication alloc] init];
-//     for (UIWindow *window in app.windows) {
-//         if (window.isKeyWindow) {
-//             return window;
-//         }
-//     }
-//     return nil;
-// }
+- (void)appendMutation:(SentryReplayMutation *)mutation timestamp:(NSNumber *)timestamp {
+    if (_mutations == nil) {
+        return;
+    }
+    NSMutableArray<SentryReplayMutation *> *mutations = _mutations[timestamp];
+    if (mutations == nil) {
+        mutations = [NSMutableArray<SentryReplayMutation *> array];
+        _mutations[timestamp] = mutations;
+    }
+    [mutations addObject:mutation];
+}
 
-//static void
-//swizzleLayoutSubviews(void (^block)(__unsafe_unretained UIView *))
-//{
-//    const SEL selector = @selector(layoutSubviews);
-//    [SentrySwizzle
-//        swizzleInstanceMethod:selector
-//                      inClass:[UIView class]
-//                newImpFactory:^id(SentrySwizzleInfo *swizzleInfo) {
-//                    return ^void(__unsafe_unretained id self) {
-//                        void (*originalIMP)(__unsafe_unretained id, SEL);
-//                        originalIMP
-//                            = (__typeof(originalIMP))[swizzleInfo getOriginalImplementation];
-//                        originalIMP(self, selector);
-//                        block((UIView *)self);
-//                    };
-//                }
-//                         mode:SentrySwizzleModeAlways
-//                          key:NULL];
-//}
+ static UIWindow *getKeyWindow() {
+     SentryUIApplication *const app = [[SentryUIApplication alloc] init];
+     for (UIWindow *window in app.windows) {
+         if (window.isKeyWindow) {
+             return window;
+         }
+     }
+     return nil;
+ }
+
+static SentryReplayNodeIDGenerator *sharedNodeIDGenerator() {
+    static SentryReplayNodeIDGenerator *generator = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        generator = [[SentryReplayNodeIDGenerator alloc] init];
+    });
+    return generator;
+}
 
 static NSNumber *getCurrentTimestamp() {
-    return @([[NSDate date] timeIntervalSince1970]);
+    return @((NSUInteger)([[NSDate date] timeIntervalSince1970]));
+}
+
+static void
+swizzleLayoutSubviews(void (^block)(__unsafe_unretained UIView *))
+{
+    const SEL selector = @selector(layoutSubviews);
+    [SentrySwizzle
+        swizzleInstanceMethod:selector
+                      inClass:[UIView class]
+                newImpFactory:^id(SentrySwizzleInfo *swizzleInfo) {
+                    return ^void(__unsafe_unretained id self) {
+                        void (*originalIMP)(__unsafe_unretained id, SEL);
+                        originalIMP
+                            = (__typeof(originalIMP))[swizzleInfo getOriginalImplementation];
+                        originalIMP(self, selector);
+                        block((UIView *)self);
+                    };
+                }
+                         mode:SentrySwizzleModeAlways
+                          key:NULL];
 }
 
 static void swizzleDidAddSubview(void (^block)(__unsafe_unretained UIView *superview, UIView *subview)) {
@@ -365,3 +499,5 @@ static void swizzleWillRemoveSubview(void (^block)(__unsafe_unretained UIView *s
 }
 
 @end
+
+NS_ASSUME_NONNULL_END
