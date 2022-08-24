@@ -35,6 +35,7 @@ serializeCGRect(CGRect rect)
 static NSDictionary<NSString *, id> *
 serializeUIColor(UIColor *color)
 {
+    if (color == nil) { return nil; }
     CGFloat r, g, b, a;
     [color getRed:&r green:&g blue:&b alpha:&a];
     const unsigned int rgb
@@ -45,6 +46,7 @@ serializeUIColor(UIColor *color)
 static NSDictionary<NSString *, id> *
 serializeUIFont(UIFont *font)
 {
+    if (font == nil) { return nil; }
     return @{
         @"familyName" : font.familyName,
         @"fontName" : font.fontName,
@@ -165,9 +167,7 @@ UIView (SentryReplay)
     if (self.contentMode != UIViewContentModeScaleToFill) {
         attributes[@"contentMode"] = serializeContentMode(self.contentMode);
     }
-    if (self.backgroundColor != nil) {
-        attributes[@"backgroundColor"] = serializeUIColor(self.backgroundColor);
-    }
+    attributes[@"backgroundColor"] = serializeUIColor(self.backgroundColor);
     return attributes;
 }
 @end
@@ -183,9 +183,7 @@ UILabel (SentryReplay)
     NSMutableDictionary<NSString *, id> *const attributes =
         [NSMutableDictionary<NSString *, id> dictionary];
     [attributes addEntriesFromDictionary:[super introspect_getAttributes]];
-    if (self.text != nil) {
-        attributes[@"text"] = self.text;
-    }
+    attributes[@"text"] = self.text;
     attributes[@"font"] = serializeUIFont(self.font);
     attributes[@"textColor"] = serializeUIColor(self.textColor);
     attributes[@"textAlignment"] = serializeTextAlignment(self.textAlignment);
@@ -204,14 +202,30 @@ UIButton (SentryReplay)
     NSMutableDictionary<NSString *, id> *const attributes =
         [NSMutableDictionary<NSString *, id> dictionary];
     [attributes addEntriesFromDictionary:[super introspect_getAttributes]];
-    if (self.currentTitle != nil) {
-        attributes[@"title"] = self.currentTitle;
-    }
-    if (self.currentTitleColor != nil) {
-        attributes[@"titleColor"] = serializeUIColor(self.currentTitleColor);
-    }
+    attributes[@"title"] = self.currentTitle;
+    attributes[@"titleColor"] = serializeUIColor(self.currentTitleColor);
     return attributes;
 }
+@end
+
+@interface UITextField (SentryReplay) <SentryIntrospectableView>
+@end
+
+@implementation UITextField (SentryReplay)
+- (NSDictionary<NSString *, id> *)introspect_getAttributes
+{
+    NSMutableDictionary<NSString *, id> *const attributes =
+        [NSMutableDictionary<NSString *, id> dictionary];
+    [attributes addEntriesFromDictionary:[super introspect_getAttributes]];
+    attributes[@"text"] = self.text;
+    attributes[@"placeholder"] = self.placeholder;
+    attributes[@"font"] = serializeUIFont(self.font);
+    attributes[@"textColor"] = serializeUIColor(self.textColor);
+    attributes[@"textAlignment"] = serializeTextAlignment(self.textAlignment);
+    attributes[@"isEditing"] = @(self.isEditing);
+    return attributes;
+}
+
 @end
 
 typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
