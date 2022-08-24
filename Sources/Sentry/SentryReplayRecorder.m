@@ -109,9 +109,11 @@ serializeTextAlignment(NSTextAlignment alignment)
 }
 
 static void *kNodeIDAssociatedObjectKey = &kNodeIDAssociatedObjectKey;
+static void *kTextNodeIDAssociatedObjectKey = &kTextNodeIDAssociatedObjectKey;
 
 @interface SentryReplayNodeIDGenerator : NSObject
 - (NSNumber *)idForNode:(nullable id)node;
+- (NSNumber *)textIdForNode:(nullable id)node;
 @end
 
 @implementation SentryReplayNodeIDGenerator {
@@ -126,14 +128,22 @@ static void *kNodeIDAssociatedObjectKey = &kNodeIDAssociatedObjectKey;
 }
 
 - (NSNumber *)idForNode:(nullable id)node {
+    return [self idForNode:node associatedObjectKey:kNodeIDAssociatedObjectKey];
+}
+
+- (NSNumber *)textIdForNode:(nullable id)node {
+    return [self idForNode:node associatedObjectKey:kTextNodeIDAssociatedObjectKey];
+}
+
+- (NSNumber *)idForNode:(nullable id)node associatedObjectKey:(void *)associatedObjectKey {
     if (node == nil) {
         return nil;
     }
-    NSNumber *nodeID = objc_getAssociatedObject(node, kNodeIDAssociatedObjectKey);
+    NSNumber *nodeID = objc_getAssociatedObject(node, associatedObjectKey);
     if (nodeID == nil) {
         nodeID = [self nextNodeID];
         objc_setAssociatedObject(
-            node, kNodeIDAssociatedObjectKey, nodeID, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            node, associatedObjectKey, nodeID, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
     return nodeID;
 }
