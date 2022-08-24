@@ -222,6 +222,7 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
 
 @interface SentryReplayMutation : NSObject
 @property (nonatomic, assign, readonly) SentryReplayMutationType mutationType;
+@property (nonatomic, copy, readonly, nonnull) NSString *viewClass;
 @property (nonatomic, strong, readonly, nonnull) NSNumber *nodeID;
 @property (nonatomic, strong, readonly, nullable) NSNumber *parentID;
 @property (nonatomic, strong, readonly, nullable) NSNumber *nextID;
@@ -258,6 +259,7 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
                      nodeIDGenerator:(SentryReplayNodeIDGenerator *)nodeIDGenerator {
     if (self = [super init]) {
         _mutationType = mutationType;
+        _viewClass = NSStringFromClass(view.class);
         _nodeID = [nodeIDGenerator idForNode:view];
         _parentID = [nodeIDGenerator idForNode:view.superview];
         NSArray<UIView *> *const subviews = view.superview.subviews;
@@ -366,6 +368,75 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
     }
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     
+    [_mutations enumerateKeysAndObjectsUsingBlock:^(NSNumber * _Nonnull timestamp, NSMutableArray<SentryReplayMutation *> * _Nonnull mutations, BOOL * _Nonnull stop) {
+        NSMutableDictionary<NSNumber *, SentryReplayMutation *> *const addedNodeMutations = [NSMutableDictionary<NSNumber *, SentryReplayMutation *> dictionary];
+        NSMutableDictionary<NSNumber *, SentryReplayMutation *> *const removedNodeMutations = [NSMutableDictionary<NSNumber *, SentryReplayMutation *> dictionary];
+        NSMutableDictionary<NSNumber *, SentryReplayMutation *> *const layoutNodeMutations = [NSMutableDictionary<NSNumber *, SentryReplayMutation *> dictionary];
+        NSMutableDictionary<NSNumber *, NSDictionary<NSString *, id> *> *const latestAttributes = [NSMutableDictionary<NSNumber *, NSDictionary<NSString *, id> *> dictionary];
+        for (SentryReplayMutation *mutation in mutations) {
+            switch (mutation.mutationType) {
+                case SentryReplayMutationTypeAddView: {
+                    addedNodeMutations[mutation.nodeID] = mutation;
+                    [removedNodeMutations removeObjectForKey:mutation.nodeID];
+                    [layoutNodeMutations removeObjectForKey:mutation.nodeID];
+                    break;
+                }
+                case SentryReplayMutationTypeRemoveView: {
+                    removedNodeMutations[mutation.nodeID] = mutation;
+                    [addedNodeMutations removeObjectForKey:mutation.nodeID];
+                    [layoutNodeMutations removeObjectForKey:mutation.nodeID];
+                    break;
+                }
+                case SentryReplayMutationTypeLayoutView:
+                    layoutNodeMutations[mutation.nodeID] = mutation;
+                    break;
+            }
+            latestAttributes[mutation.nodeID] = mutation.attributes;
+        }
+        
+        NSMutableArray<NSDictionary<NSString *, id> *> *const adds = [NSMutableArray<NSDictionary<NSString *, id> *> array];
+        NSMutableArray<NSDictionary<NSString *, id> *> *const removes = [NSMutableArray<NSDictionary<NSString *, id> *> array];
+        NSMutableArray<NSDictionary<NSString *, id> *> *const attributes = [NSMutableArray<NSDictionary<NSString *, id> *> array];
+        
+        [addedNodeMutations enumerateKeysAndObjectsUsingBlock:^(NSNumber * _Nonnull nodeID, SentryReplayMutation * _Nonnull mutation, BOOL * _Nonnull stop1) {
+            [adds addObject:@{
+                @"parentId": mutation.parentID,
+                @"nextId": mutation.nextID ?: [NSNull null],
+                @"node": @{
+                    @"type": @2,
+                    @"id": mutation.nodeID,
+                    @"viewClass": mutation.viewClass,
+                    @"attributes": latestAttributes[mutation.nodeID],
+                    @"childNodes": @[]
+                }
+            }];
+        }];
+        [removedNodeMutations enumerateKeysAndObjectsUsingBlock:^(NSNumber * _Nonnull nodeID, SentryReplayMutation * _Nonnull mutation, BOOL * _Nonnull stop2) {
+            [removes addObject:@{
+                @"parentId": mutation.parentID,
+                @"id": mutation.nodeID
+            }];
+        }];
+        [layoutNodeMutations enumerateKeysAndObjectsUsingBlock:^(NSNumber * _Nonnull nodeID, SentryReplayMutation * _Nonnull mutation, BOOL * _Nonnull stop3) {
+            [attributes addObject:@{
+                @"id": mutation.nodeID,
+                @"attributes": latestAttributes[mutation.nodeID]
+            }];
+        }];
+        
+        [_replay addObject:@{
+            @"type": @3,
+            @"data": @{
+                @"source": @0,
+                @"texts": @[],
+                @"attributes": attributes,
+                @"removes": removes,
+                @"adds": adds
+            },
+            @"timestamp": timestamp
+        }];
+    }];
+    
     NSData *data = [NSJSONSerialization dataWithJSONObject:_replay options:0 error:nil];
     NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:@"replay.json"];
     [data writeToFile:path atomically:YES];
@@ -439,7 +510,7 @@ static SentryReplayNodeIDGenerator *sharedNodeIDGenerator() {
 }
 
 static NSNumber *getCurrentTimestamp() {
-    return @((NSUInteger)([[NSDate date] timeIntervalSince1970]));
+    return @((NSUInteger)([[NSDate date] timeIntervalSince1970] * 1000)); // milliseconds
 }
 
 static void
