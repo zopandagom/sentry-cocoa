@@ -253,7 +253,7 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
 };
 
 @interface SentryReplayMutation : NSObject
-@property (nonatomic, assign, readonly) SentryReplayMutationType mutationType;
+@property (nonatomic, assign) SentryReplayMutationType mutationType;
 @property (nonatomic, copy, readonly, nonnull) NSString *viewClass;
 @property (nonatomic, strong, readonly, nonnull) NSNumber *nodeID;
 @property (nonatomic, strong, readonly, nullable) NSNumber *parentID;
@@ -315,6 +315,7 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
 @implementation SentryReplayRecorder {
     NSMutableDictionary<NSNumber *, NSMutableArray<SentryReplayMutation *> *> *_mutations;
     NSMutableArray<NSDictionary<NSString *, id> *> *_replay;
+    NSMutableSet<NSNumber *> *_activeNodeIDs;
     BOOL _isRecording;
 }
 
@@ -364,6 +365,7 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
     _mutations = [NSMutableDictionary<NSNumber *, NSMutableArray<SentryReplayMutation *> *> dictionary];
     _replay =
         [NSMutableArray<NSDictionary<NSString *, id> *> array];
+    _activeNodeIDs = [NSMutableSet<NSNumber *> set];
     
     const CGRect screenBounds = keyWindow.screen.bounds;
     NSNumber *const timestamp = getCurrentTimestamp();
@@ -393,7 +395,7 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
         @"timestamp" : timestamp
     }];
     
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)),
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(4.0 * NSEC_PER_SEC)),
         dispatch_get_main_queue(), ^{ [self stopRecording]; });
 }
 
@@ -404,7 +406,8 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
     }
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     
-    [_mutations enumerateKeysAndObjectsUsingBlock:^(NSNumber * _Nonnull timestamp, NSMutableArray<SentryReplayMutation *> * _Nonnull mutations, BOOL * _Nonnull stop) {
+    [[[_mutations allKeys] sortedArrayUsingSelector:@selector(compare:)] enumerateObjectsUsingBlock:^(NSNumber * _Nonnull timestamp, NSUInteger idx, BOOL * _Nonnull stop) {
+        NSMutableArray<SentryReplayMutation *> *const mutations = _mutations[timestamp];
         NSMutableDictionary<NSNumber *, SentryReplayMutation *> *const addedNodeMutations = [NSMutableDictionary<NSNumber *, SentryReplayMutation *> dictionary];
         NSMutableDictionary<NSNumber *, SentryReplayMutation *> *const removedNodeMutations = [NSMutableDictionary<NSNumber *, SentryReplayMutation *> dictionary];
         NSMutableDictionary<NSNumber *, SentryReplayMutation *> *const layoutNodeMutations = [NSMutableDictionary<NSNumber *, SentryReplayMutation *> dictionary];
@@ -436,7 +439,7 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
         
         [addedNodeMutations enumerateKeysAndObjectsUsingBlock:^(NSNumber * _Nonnull nodeID, SentryReplayMutation * _Nonnull mutation, BOOL * _Nonnull stop1) {
             [adds addObject:@{
-                @"parentId": mutation.parentID,
+                @"parentId": mutation.parentID ?: [NSNull null],
                 @"nextId": mutation.nextID ?: [NSNull null],
                 @"node": @{
                     @"type": @2,
@@ -480,6 +483,7 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
     
     _replay = nil;
     _mutations = nil;
+    _activeNodeIDs = nil;
     _isRecording = NO;
 }
 
@@ -500,16 +504,20 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
     NSMutableArray<NSDictionary<NSString *, id> *> *const childNodes =
         [NSMutableArray<NSDictionary<NSString *, id> *> array];
     
+    NSNumber *const nodeID = [sharedNodeIDGenerator() idForNode:view];
+    [_activeNodeIDs addObject:nodeID];
     node[@"type"] = @2;
-    node[@"id"] = [sharedNodeIDGenerator() idForNode:view];
+    node[@"id"] = nodeID;
     node[@"viewClass"] = NSStringFromClass(view.class);
     node[@"attributes"] = [view introspect_getAttributes];
     if ([view respondsToSelector:@selector(introspect_getTextContents)]) {
+        NSNumber *const textID = [sharedNodeIDGenerator() textIdForNode:view];
         [childNodes addObject:@{
             @"type": @2,
-            @"id": [sharedNodeIDGenerator() textIdForNode:view],
+            @"id": textID,
             @"textContents": [view introspect_getTextContents]
         }];
+        [_activeNodeIDs addObject:textID];
     }
     for (UIView *subview in view.subviews) {
         NSDictionary<NSString *, id> *const childNode = [self serializeViewHierarchy:subview];
@@ -525,6 +533,21 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
     if (_mutations == nil) {
         return;
     }
+    switch (mutation.mutationType) {
+        case SentryReplayMutationTypeAddView:
+            [_activeNodeIDs addObject:mutation.nodeID];
+            break;
+        case SentryReplayMutationTypeRemoveView:
+            [_activeNodeIDs removeObject:mutation.nodeID];
+            break;
+        case SentryReplayMutationTypeLayoutView: {
+            if (![_activeNodeIDs containsObject:mutation.nodeID]) {
+                mutation.mutationType = SentryReplayMutationTypeAddView;
+            }
+            break;
+        }
+    }
+    
     NSMutableArray<SentryReplayMutation *> *mutations = _mutations[timestamp];
     if (mutations == nil) {
         mutations = [NSMutableArray<SentryReplayMutation *> array];
