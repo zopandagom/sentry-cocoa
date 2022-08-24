@@ -156,6 +156,8 @@ static void *kTextNodeIDAssociatedObjectKey = &kTextNodeIDAssociatedObjectKey;
 
 @protocol SentryIntrospectableView <NSObject>
 - (NSDictionary<NSString *, id> *)introspect_getAttributes;
+@optional
+- (NSString *)introspect_getTextContents;
 @end
 
 @interface
@@ -193,11 +195,14 @@ UILabel (SentryReplay)
     NSMutableDictionary<NSString *, id> *const attributes =
         [NSMutableDictionary<NSString *, id> dictionary];
     [attributes addEntriesFromDictionary:[super introspect_getAttributes]];
-    attributes[@"text"] = self.text;
     attributes[@"font"] = serializeUIFont(self.font);
     attributes[@"textColor"] = serializeUIColor(self.textColor);
     attributes[@"textAlignment"] = serializeTextAlignment(self.textAlignment);
     return attributes;
+}
+
+- (NSString *)introspect_getTextContents {
+    return self.text;
 }
 @end
 
@@ -227,13 +232,16 @@ UIButton (SentryReplay)
     NSMutableDictionary<NSString *, id> *const attributes =
         [NSMutableDictionary<NSString *, id> dictionary];
     [attributes addEntriesFromDictionary:[super introspect_getAttributes]];
-    attributes[@"text"] = self.text;
     attributes[@"placeholder"] = self.placeholder;
     attributes[@"font"] = serializeUIFont(self.font);
     attributes[@"textColor"] = serializeUIColor(self.textColor);
     attributes[@"textAlignment"] = serializeTextAlignment(self.textAlignment);
     attributes[@"isEditing"] = @(self.isEditing);
     return attributes;
+}
+
+- (NSString *)introspect_getTextContents {
+    return self.text;
 }
 
 @end
@@ -250,7 +258,8 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
 @property (nonatomic, strong, readonly, nonnull) NSNumber *nodeID;
 @property (nonatomic, strong, readonly, nullable) NSNumber *parentID;
 @property (nonatomic, strong, readonly, nullable) NSNumber *nextID;
-@property (nonatomic, strong, readonly) NSDictionary<NSString *, id> *attributes;
+@property (nonatomic, copy, readonly) NSDictionary<NSString *, id> *attributes;
+@property (nonatomic, copy, readonly, nullable) NSString *text;
 
 + (instancetype)addView:(UIView *)view
         nodeIDGenerator:(SentryReplayNodeIDGenerator *)nodeIDGenerator;
@@ -293,7 +302,10 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
                 _nextID = [nodeIDGenerator idForNode:subviews[index + 1]];
             }
         }
-        _attributes = [view introspect_getAttributes];
+        _attributes = [[view introspect_getAttributes] copy];
+        if ([view respondsToSelector:@selector(introspect_getTextContents)]) {
+            _text = [[view introspect_getTextContents] copy];
+        }
     }
     return self;
 }
@@ -485,13 +497,20 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
     }
     NSMutableDictionary<NSString *, id> *const node =
         [NSMutableDictionary<NSString *, id> dictionary];
+    NSMutableArray<NSDictionary<NSString *, id> *> *const childNodes =
+        [NSMutableArray<NSDictionary<NSString *, id> *> array];
+    
     node[@"type"] = @2;
     node[@"id"] = [sharedNodeIDGenerator() idForNode:view];
     node[@"viewClass"] = NSStringFromClass(view.class);
     node[@"attributes"] = [view introspect_getAttributes];
-
-    NSMutableArray<NSDictionary<NSString *, id> *> *const childNodes =
-        [NSMutableArray<NSDictionary<NSString *, id> *> array];
+    if ([view respondsToSelector:@selector(introspect_getTextContents)]) {
+        [childNodes addObject:@{
+            @"type": @2,
+            @"id": [sharedNodeIDGenerator() textIdForNode:view],
+            @"textContents": [view introspect_getTextContents]
+        }];
+    }
     for (UIView *subview in view.subviews) {
         NSDictionary<NSString *, id> *const childNode = [self serializeViewHierarchy:subview];
         if (childNode != nil) {
