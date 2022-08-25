@@ -556,15 +556,33 @@ typedef NS_ENUM(NSInteger, SentryReplayMutationType) {
     [mutations addObject:mutation];
 }
 
- static UIWindow *getKeyWindow() {
-     SentryUIApplication *const app = [[SentryUIApplication alloc] init];
-     for (UIWindow *window in app.windows) {
-         if (window.isKeyWindow) {
-             return window;
-         }
-     }
-     return nil;
- }
+static NSDictionary<NSString *, id> *diffAttributes(NSDictionary<NSString *, id> *old, NSDictionary<NSString *, id> *new) {
+    NSMutableSet<NSString *> *const changedKeys = [NSMutableSet<NSString *> set];
+    [new enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, id  _Nonnull newValue, BOOL * _Nonnull stop) {
+        id const oldValue = old[key];
+        if (oldValue == nil || ![oldValue isEqual:newValue]) {
+            [changedKeys addObject:key];
+        }
+    }];
+    if (changedKeys.count == 0) {
+        return nil;
+    }
+    NSMutableDictionary<NSString *, id> *const updatedAttributes = [NSMutableDictionary<NSString *, id> dictionary];
+    [changedKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull key, BOOL * _Nonnull stop) {
+        updatedAttributes[key] = new[key];
+    }];
+    return updatedAttributes;
+}
+
+static UIWindow *getKeyWindow() {
+    SentryUIApplication *const app = [[SentryUIApplication alloc] init];
+    for (UIWindow *window in app.windows) {
+        if (window.isKeyWindow) {
+            return window;
+        }
+    }
+    return nil;
+}
 
 static SentryReplayNodeIDGenerator *sharedNodeIDGenerator() {
     static SentryReplayNodeIDGenerator *generator = nil;
