@@ -7,12 +7,14 @@ ViewController ()
 
 @end
 
-@implementation ViewController
+@implementation ViewController {
+    int numberOfMinions;
+}
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-
+    numberOfMinions = 0;
     // Do any additional setup after loading the view.
     [SentrySDK configureScope:^(SentryScope *_Nonnull scope) {
         [scope setEnvironment:@"debug"];
@@ -121,7 +123,8 @@ ViewController ()
 
 - (IBAction)crash:(id)sender
 {
-    [SentrySDK crash];
+    [self causeCaos];
+    //[SentrySDK crash];
 }
 
 - (IBAction)asyncCrash:(id)sender
@@ -154,6 +157,53 @@ ViewController ()
             }
         }
     });
+}
+
+- (void)causeCaos {
+    [NSThread detachNewThreadSelector:@selector(startCaos)
+                             toTarget:self
+                           withObject:nil];
+
+    [NSThread detachNewThreadSelector:@selector(ReadThreads)
+                             toTarget:self
+                           withObject:nil];
+}
+
+- (void)startCaos {
+    while (true) {
+
+        while (numberOfMinions < 130) {
+            [NSThread detachNewThreadSelector:@selector(countTo100)
+                                     toTarget:self
+                                   withObject:nil];
+            @synchronized (self) {
+                numberOfMinions++;
+            }
+        }
+
+        [NSThread sleepForTimeInterval:0.1];
+    }
+}
+
+- (void)countTo100 {
+    for(int i = 0; i < 100;i++ ){
+        [NSThread sleepForTimeInterval:0.01];
+    }
+    @synchronized (self) {
+        numberOfMinions--;
+    }
+}
+
+- (void)ReadThreads {
+    id threadInspector = [[[SentrySDK performSelector:NSSelectorFromString(@"currentHub")] performSelector:NSSelectorFromString(@"getClient")] performSelector:NSSelectorFromString(@"threadInspector")];
+
+    while (true) {
+        @autoreleasepool {
+            NSArray* threads = [threadInspector performSelector:NSSelectorFromString(@"getCurrentThreadsWithStackTrace")];
+            NSLog(@"Threads %i", threads.count);
+            [NSThread sleepForTimeInterval:0.1];
+        }
+    }
 }
 
 @end

@@ -116,6 +116,15 @@ getStackEntriesFromThread(SentryCrashThread thread, struct SentryCrashMachineCon
         SentryCrashMC_NEW_CONTEXT(context);
         SentryCrashThread currentThread = sentrycrashthread_self();
 
+//        const auto cache = std::make_shared<sentry::profiling::ThreadMetadataCache>();
+//
+//        sentry::profiling::enumerateBacktracesForAllThreads([&](auto &backtrace) {
+//            if (backtrace.addresses.size() > 0) {
+//                printf("%lu\n", backtrace.addresses.size());
+//            }
+//        },
+//        cache);
+
         thread_act_array_t suspendedThreads = NULL;
         mach_msg_type_number_t numSuspendedThreads = 0;
 
