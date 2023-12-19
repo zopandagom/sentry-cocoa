@@ -1,5 +1,6 @@
 #import "SentrySessionReplay.h"
-#import "SentryReplayMaker.h"
+#import "SentryVideoReplay.h"
+#import "SentryImagesReplay.h"
 #import "SentryViewPhotographer.h"
 
 @implementation SentrySessionReplay {
@@ -9,7 +10,8 @@
     NSDate * lastScreenShot;
     NSURL * urlToCache;
     NSDate * sessionStart;
-    SentryReplayMaker * replayMaker;
+    //SentryVideoReplay * videoReplay;
+    SentryImagesReplay * imagesReplay;
     
     NSMutableArray<UIImage *>* imageCollection;
 }
@@ -36,7 +38,8 @@
             [NSFileManager.defaultManager createDirectoryAtURL:urlToCache withIntermediateDirectories:YES attributes:nil error:nil];
         }
         
-        replayMaker = [[SentryReplayMaker alloc] initWithOutputPath:[urlToCache URLByAppendingPathComponent:@"sr.mp4"].path frameSize:rootView.frame.size framesPerSec:1];
+        //videoReplay = [[SentryVideoReplay alloc] initWithOutputPath:[urlToCache URLByAppendingPathComponent:@"sr.mp4"].path frameSize:rootView.frame.size framesPerSec:1];
+        imagesReplay = [[SentryImagesReplay alloc] initWithOutputPath:urlToCache.path];
         imageCollection = [NSMutableArray array];
         
         NSLog(@"Recording session to %@",urlToCache);
@@ -44,11 +47,11 @@
 }
 
 - (void)stop {
-    [replayMaker finalizeVideoWithCompletion:^(BOOL success, NSError * _Nonnull error) {
-        if (!success) {
-            NSLog(@"%@", error);
-        }
-    }];
+//    [videoReplay finalizeVideoWithCompletion:^(BOOL success, NSError * _Nonnull error) {
+//        if (!success) {
+//            NSLog(@"%@", error);
+//        }
+//    }];
 }
 
 - (void)newFrame:(CADisplayLink *)sender {
@@ -74,9 +77,10 @@
  
     dispatch_queue_t backgroundQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
     dispatch_async(backgroundQueue, ^{
-        [self->replayMaker addFrame:screenshot withCompletion:^(BOOL success, NSError * _Nonnull error) {
-            
-        }];
+//        [self->videoReplay addFrame:screenshot withCompletion:^(BOOL success, NSError * _Nonnull error) {
+//            
+//        }];
+        [self->imagesReplay addFrame:screenshot];
     });
 }
 

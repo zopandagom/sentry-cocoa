@@ -3,7 +3,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface SentryReplayMaker : NSObject
+@interface SentryVideoReplay : NSObject
 
 - (instancetype)initWithOutputPath:(NSString *)outputPath
                         frameSize:(CGSize)frameSize

@@ -16,6 +16,7 @@
 #import "SentrySDK.h"
 #import "SentryScope.h"
 #import "SentrySwiftAsyncIntegration.h"
+#import "SentrySessionReplayIntegration.h"
 
 #if SENTRY_HAS_UIKIT
 #    import "SentryAppStartTrackingIntegration.h"
@@ -72,7 +73,8 @@ NSString *const kSentryDefaultEnvironment = @"production";
             NSStringFromClass([SentryCoreDataTrackingIntegration class]),
             NSStringFromClass([SentryFileIOTrackingIntegration class]),
             NSStringFromClass([SentryNetworkTrackingIntegration class]),
-            NSStringFromClass([SentrySwiftAsyncIntegration class])
+            NSStringFromClass([SentrySwiftAsyncIntegration class]),
+            NSStringFromClass([SentrySessionReplayIntegration class])
         ]
             .mutableCopy;
 

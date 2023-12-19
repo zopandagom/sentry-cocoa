@@ -1,14 +1,14 @@
-#import "SentryReplayMaker.h"
+#import "SentryVideoReplay.h"
 #import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
 
-@interface SentryReplayMaker ()
+@interface SentryVideoReplay ()
 
 @property (nonatomic, strong) NSURL * url;
 
 @end
 
-@implementation SentryReplayMaker {
+@implementation SentryVideoReplay {
     NSString *_outputPath;
     CGSize _frameSize;
     NSInteger _framesPerSec;
