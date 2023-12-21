@@ -3389,12 +3389,12 @@
 			children = (
 				D80C8E192B31F4580018C7F2 /* SentrySessionReplayIntegration.h */,
 				D80C8E1A2B31F4580018C7F2 /* SentrySessionReplayIntegration.m */,
-				D80C8E0C2B31EAFE0018C7F2 /* SentryVideoReplay.h */,
-				D80C8E0D2B31EB010018C7F2 /* SentryVideoReplay.m */,
 				D80C8E0B2B31EAFC0018C7F2 /* SentrySessionReplay.h */,
 				D80C8E0A2B31EAFA0018C7F2 /* SentrySessionReplay.m */,
 				D80C8E0E2B31EB030018C7F2 /* SentryViewPhotographer.h */,
 				D80C8E092B31EAF80018C7F2 /* SentryViewPhotographer.m */,
+				D80C8E0C2B31EAFE0018C7F2 /* SentryVideoReplay.h */,
+				D80C8E0D2B31EB010018C7F2 /* SentryVideoReplay.m */,
 				D80C8E152B31EE5E0018C7F2 /* SentryImagesReplay.h */,
 				D80C8E162B31EE5E0018C7F2 /* SentryImagesReplay.m */,
 			);

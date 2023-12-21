@@ -3,6 +3,8 @@
 #import "SentryImagesReplay.h"
 #import "SentryViewPhotographer.h"
 
+//#define use_video
+
 @implementation SentrySessionReplay {
     UIView * _rootView;
     BOOL processingScreenshot;
@@ -10,8 +12,13 @@
     NSDate * lastScreenShot;
     NSURL * urlToCache;
     NSDate * sessionStart;
-    //SentryVideoReplay * videoReplay;
+    
+#ifdef use_video
+    SentryVideoReplay * videoReplay;
+#else
     SentryImagesReplay * imagesReplay;
+#endif
+    
     
     NSMutableArray<UIImage *>* imageCollection;
 }
@@ -37,9 +44,11 @@
         if (![NSFileManager.defaultManager fileExistsAtPath:urlToCache.path]) {
             [NSFileManager.defaultManager createDirectoryAtURL:urlToCache withIntermediateDirectories:YES attributes:nil error:nil];
         }
-        
-        //videoReplay = [[SentryVideoReplay alloc] initWithOutputPath:[urlToCache URLByAppendingPathComponent:@"sr.mp4"].path frameSize:rootView.frame.size framesPerSec:1];
+#ifdef use_video
+        videoReplay = [[SentryVideoReplay alloc] initWithOutputPath:[urlToCache URLByAppendingPathComponent:@"sr.mp4"].path frameSize:rootView.frame.size framesPerSec:1];
+#else
         imagesReplay = [[SentryImagesReplay alloc] initWithOutputPath:urlToCache.path];
+#endif
         imageCollection = [NSMutableArray array];
         
         NSLog(@"Recording session to %@",urlToCache);
@@ -47,11 +56,13 @@
 }
 
 - (void)stop {
-//    [videoReplay finalizeVideoWithCompletion:^(BOOL success, NSError * _Nonnull error) {
-//        if (!success) {
-//            NSLog(@"%@", error);
-//        }
-//    }];
+#ifdef use_video
+    [videoReplay finalizeVideoWithCompletion:^(BOOL success, NSError * _Nonnull error) {
+        if (!success) {
+            NSLog(@"%@", error);
+        }
+    }];
+#endif
 }
 
 - (void)newFrame:(CADisplayLink *)sender {
@@ -77,10 +88,13 @@
  
     dispatch_queue_t backgroundQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
     dispatch_async(backgroundQueue, ^{
-//        [self->videoReplay addFrame:screenshot withCompletion:^(BOOL success, NSError * _Nonnull error) {
-//            
-//        }];
+#ifdef use_video
+        [self->videoReplay addFrame:screenshot withCompletion:^(BOOL success, NSError * _Nonnull error) {
+            
+        }];
+#else
         [self->imagesReplay addFrame:screenshot];
+#endif
     });
 }
 

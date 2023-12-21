@@ -37,11 +37,17 @@
     // Define the output URL for the video
     NSURL *outputURL = [NSURL fileURLWithPath:_outputPath];
 
+    NSDictionary *compressionProperties = @{
+        AVVideoAverageBitRateKey: @20000, // Set your desired bitrate here (in bps)
+        AVVideoProfileLevelKey: AVVideoProfileLevelH264BaselineAutoLevel
+    };
+    
     // Define video settings
     NSDictionary *videoSettings = @{
         AVVideoCodecKey: AVVideoCodecTypeH264,
         AVVideoWidthKey: @(_frameSize.width),
         AVVideoHeightKey: @(_frameSize.height),
+        AVVideoCompressionPropertiesKey: compressionProperties,
     };
 
     // Create AVAssetWriter

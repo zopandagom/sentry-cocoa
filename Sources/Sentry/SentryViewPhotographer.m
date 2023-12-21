@@ -31,10 +31,9 @@
     UIGraphicsBeginImageContextWithOptions(view.bounds.size, YES, 0);
     CGContextRef currentContext = UIGraphicsGetCurrentContext();
     
-    [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:NO];
+    [view.layer renderInContext:currentContext];
     
     [self maskText:view context:currentContext];
-    
     
     UIImage* screenshot = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
@@ -48,7 +47,7 @@
 //    //x = 52, y = 111), size = (width = 299, height = 19)
 //    if (CGRectIntersectsRect(mask, tfRect)) {
 //        NSLog(@"intersection");
-//    }cdcds
+//    }
 //
 //    if ([view isKindOfClass:UITextField.class]) {
 //        NSLog(@"dae");
@@ -58,7 +57,7 @@
 //        [UIColor.orangeColor setStroke];
 //        CGContextSetLineWidth(context, 4);
 //        CGContextStrokeRect(context, mask);
-//    //  CGContextFillRect(context, mask);
+//        CGContextFillRect(context, mask);
 //    } else {
 //        if ([self isOpaqueOrHasBackground:view]) {
 //            [UIColor.greenColor setStroke];
@@ -100,7 +99,7 @@
 
 - (CGMutablePathRef)buildPathForView:(UIView *)view inPath:(CGMutablePathRef)path {
     CGRect rectInWindow = [view convertRect:view.bounds toView:nil];
-       
+        
     if ([self shouldRedact:view]) {
         CGPathAddRect(path, NULL, rectInWindow);
     } else if ([self isOpaqueOrHasBackground:view]) {
@@ -126,7 +125,7 @@
 }
 
 - (BOOL)isOpaqueOrHasBackground:(UIView *)view {
-    return (view.isOpaque || (view.backgroundColor != nil && CGColorGetAlpha(view.backgroundColor.CGColor) > 0.9));
+    return (view.backgroundColor != nil && CGColorGetAlpha(view.backgroundColor.CGColor) > 0.9);
 }
 
 @end
