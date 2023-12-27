@@ -2,8 +2,11 @@
 #import "SentryVideoReplay.h"
 #import "SentryImagesReplay.h"
 #import "SentryViewPhotographer.h"
+#import "SentryOndemandReplay.h"
+#import "SentryAttachment+Private.h"
 
-//#define use_video
+//#define use_video 1
+#define use_ondemand 1
 
 @implementation SentrySessionReplay {
     UIView * _rootView;
@@ -13,10 +16,12 @@
     NSURL * urlToCache;
     NSDate * sessionStart;
     
-#ifdef use_video
-    SentryVideoReplay * videoReplay;
+#if use_video
+    SentryVideoReplay * replayMaker;
+#elif use_ondemand
+    SentryOndemandReplay * replayMaker;
 #else
-    SentryImagesReplay * imagesReplay;
+    SentryImagesReplay * replayMaker;
 #endif
     
     
@@ -44,10 +49,13 @@
         if (![NSFileManager.defaultManager fileExistsAtPath:urlToCache.path]) {
             [NSFileManager.defaultManager createDirectoryAtURL:urlToCache withIntermediateDirectories:YES attributes:nil error:nil];
         }
-#ifdef use_video
-        videoReplay = [[SentryVideoReplay alloc] initWithOutputPath:[urlToCache URLByAppendingPathComponent:@"sr.mp4"].path frameSize:rootView.frame.size framesPerSec:1];
+        replayMaker =
+#if use_video
+        [[SentryVideoReplay alloc] initWithOutputPath:[urlToCache URLByAppendingPathComponent:@"sr.mp4"].path frameSize:rootView.frame.size framesPerSec:1];
+#elif use_ondemand
+        [[SentryOndemandReplay alloc] initWithOutputPath:urlToCache.path];
 #else
-        imagesReplay = [[SentryImagesReplay alloc] initWithOutputPath:urlToCache.path];
+        [[SentryImagesReplay alloc] initWithOutputPath:urlToCache.path];
 #endif
         imageCollection = [NSMutableArray array];
         
@@ -62,6 +70,49 @@
             NSLog(@"%@", error);
         }
     }];
+#endif
+}
+
+- (NSArray<SentryAttachment *> *)processAttachments:(NSArray<SentryAttachment *> *)attachments
+                                           forEvent:(nonnull SentryEvent *)event
+{
+#if use_ondemand
+    if (event.error == nil && (event.exceptions == nil || event.exceptions.count == 0)) {
+        return attachments;
+    }
+    
+    NSLog(@"Recording session event id %@", event.eventId);
+    NSMutableArray<SentryAttachment *> *result = [NSMutableArray arrayWithArray:attachments];
+    
+    NSURL * finalPath  = [urlToCache URLByAppendingPathComponent:@"replay.mp4"];
+    
+    dispatch_group_t _wait_for_render = dispatch_group_create();
+    
+    dispatch_group_enter(_wait_for_render);
+    [replayMaker createVideoOf:30
+                          from:[NSDate dateWithTimeIntervalSinceNow:-30]
+                 outputFileURL:finalPath
+                    completion:^(BOOL success, NSError * _Nonnull error) {
+        dispatch_group_leave(_wait_for_render);
+    }];
+    dispatch_group_wait(_wait_for_render, DISPATCH_TIME_FOREVER);
+    
+    SentryAttachment *attachment =
+        [[SentryAttachment alloc] initWithPath:finalPath.path
+                                      filename:@"replay.mp4"
+                                   contentType:@"video/mp4"];
+
+    [result addObject:attachment];
+    
+    return result;
+#else
+    return attachments;
+#endif
+}
+
+- (void)sendReplayForEvent:(SentryEvent *)event {
+#if use_ondemand
+    
 #endif
 }
 
@@ -88,14 +139,15 @@
  
     dispatch_queue_t backgroundQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
     dispatch_async(backgroundQueue, ^{
-#ifdef use_video
-        [self->videoReplay addFrame:screenshot withCompletion:^(BOOL success, NSError * _Nonnull error) {
+#if use_video
+        [self->replayMaker addFrame:screenshot withCompletion:^(BOOL success, NSError * _Nonnull error) {
             
         }];
 #else
-        [self->imagesReplay addFrame:screenshot];
+        [self->replayMaker addFrame:screenshot];
 #endif
     });
 }
+
 
 @end

@@ -2,6 +2,10 @@
 #import "SentrySessionReplay.h"
 #import "SentryDependencyContainer.h"
 #import "SentryUIApplication.h"
+#import "SentrySDK+Private.h"
+#import "SentryClient+Private.h"
+#import "SentryHub+Private.h"
+#import "SentrySDK+Private.h"
 
 @implementation SentrySessionReplayIntegration {
     SentrySessionReplay * sessionReplay;
@@ -11,6 +15,9 @@
 {
     sessionReplay = [[SentrySessionReplay alloc] init];
     [sessionReplay start: SentryDependencyContainer.sharedInstance.application.windows.firstObject];
+    
+    SentryClient *client = [SentrySDK.currentHub getClient];
+    [client addAttachmentProcessor:sessionReplay];
     
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(stop) name:UIApplicationDidEnterBackgroundNotification object:nil];
     return YES;
