@@ -28,6 +28,7 @@
 #    import "SentryUIEventTrackingIntegration.h"
 #    import "SentryViewHierarchyIntegration.h"
 #    import "SentryWatchdogTerminationTrackingIntegration.h"
+#    import "SentryReplaySettings.h"
 #endif // SENTRY_HAS_UIKIT
 
 #if SENTRY_HAS_METRIC_KIT
@@ -122,6 +123,7 @@ NSString *const kSentryDefaultEnvironment = @"production";
         self.enableUserInteractionTracing = YES;
         self.idleTimeout = 3.0;
         self.enablePreWarmedAppStartTracing = NO;
+        self.replaySettings = [[SentryReplaySettings alloc] init];
 #endif // SENTRY_HAS_UIKIT
         self.enableAppHangTracking = YES;
         self.appHangTimeoutInterval = 2.0;
@@ -406,6 +408,11 @@ NSString *const kSentryDefaultEnvironment = @"production";
 
     [self setBool:options[@"enablePreWarmedAppStartTracing"]
             block:^(BOOL value) { self->_enablePreWarmedAppStartTracing = value; }];
+    
+    if ([options[@"replaySettings"] isKindOfClass:NSDictionary.class]) {
+        self.replaySettings = [[SentryReplaySettings alloc] initWithDictionary:options[@"replaySettings"]];
+    }
+    
 #endif // SENTRY_HAS_UIKIT
 
     [self setBool:options[@"enableAppHangTracking"]

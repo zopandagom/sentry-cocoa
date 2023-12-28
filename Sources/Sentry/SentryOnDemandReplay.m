@@ -1,6 +1,7 @@
-#import "SentryOndemandReplay.h"
+#import "SentryOnDemandReplay.h"
 #import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
+#import "SentryLog.h"
 
 @interface SentryReplayFrame : NSObject
 
@@ -22,14 +23,13 @@
 
 @end
 
-
-@implementation SentryOndemandReplay
-
+@implementation SentryOnDemandReplay
 {
     NSString * _outputPath;
     NSDate * _startTime;
-    NSMutableArray * _frames;
+    NSMutableArray<SentryReplayFrame *> * _frames;
     CGSize _videoSize;
+    dispatch_queue_t _onDemandDispatchQueue;
 }
 
 - (instancetype)initWithOutputPath:(NSString *)outputPath {
@@ -38,66 +38,64 @@
         _startTime = [[NSDate alloc] init];
         _frames = [NSMutableArray array];
         _videoSize = CGSizeMake(300, 651);
+        _bitRate = 20000;
+        _cacheMaxSize = NSUIntegerMax;
+        _onDemandDispatchQueue = dispatch_queue_create("io.sentry.sessionreplay.ondemand", NULL);
+        
     }
     return self;
 }
 
 - (void)addFrame:(UIImage *)image {
-    image = [self resizeImage:image withMaxWidth:300];
-    NSData * data = UIImagePNGRepresentation(image);
-    NSDate* date = [[NSDate alloc] init];
-    NSTimeInterval interval = [date timeIntervalSinceDate:_startTime];
-    NSString *imagePath = [_outputPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%lf.png", interval]];
-    
-    [data writeToFile:imagePath atomically:YES];
-    
-    SentryReplayFrame *frame = [[SentryReplayFrame alloc] initWithPath:imagePath time:date];
-    [_frames addObject:frame];
+    dispatch_async(_onDemandDispatchQueue, ^{
+        NSData * data = UIImagePNGRepresentation([self resizeImage:image withMaxWidth:300]);
+        NSDate* date = [[NSDate alloc] init];
+        NSTimeInterval interval = [date timeIntervalSinceDate:self->_startTime];
+        NSString *imagePath = [self->_outputPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%lf.png", interval]];
+        
+        [data writeToFile:imagePath atomically:YES];
+        
+        SentryReplayFrame *frame = [[SentryReplayFrame alloc] initWithPath:imagePath time:date];
+        [self->_frames addObject:frame];
+        
+        while (self->_frames.count > self->_cacheMaxSize) {
+            [self removeOldestFrame];
+        }
+    });
 }
 
 - (UIImage *)resizeImage:(UIImage *)originalImage withMaxWidth:(CGFloat)maxWidth {
-    // Get the original image size
     CGSize originalSize = originalImage.size;
-
-    // Calculate the aspect ratio
     CGFloat aspectRatio = originalSize.width / originalSize.height;
 
-    // Calculate the new height based on the maximum width
     CGFloat newWidth = MIN(originalSize.width, maxWidth);
     CGFloat newHeight = newWidth / aspectRatio;
 
-    // Create a new size with the calculated dimensions
     CGSize newSize = CGSizeMake(newWidth, newHeight);
 
-    // Create a new graphics context
     UIGraphicsBeginImageContextWithOptions(newSize, NO, 1);
-
-    // Draw the image in the new context, scaling it to fit
     [originalImage drawInRect:CGRectMake(0, 0, newSize.width, newSize.height)];
-
-    // Get the resized image from the context
     UIImage *resizedImage = UIGraphicsGetImageFromCurrentImageContext();
-
-    // Cleanup
     UIGraphicsEndImageContext();
 
     return resizedImage;
 }
-//
-//- (NSString *)createVideoOf:(NSTimeInterval)duration from:(NSDate *)beginning {
-//     for (SentryReplayFrame *frame in _frames) {
-//        UIImage *image = [UIImage imageWithContentsOfFile:frame.imagePath];
-//
-//        if (image) {
-//            NSDate *imageDate = [beginning dateByAddingTimeInterval:[frame.creationTime timeIntervalSinceDate:beginning]];
-//            CMTime presentTime = CMTimeMakeWithSeconds([imageDate timeIntervalSinceDate:beginning], 600);
-//
-//            // Append the image to the video
-//            [videoWriterInput appendSampleBuffer:[self sampleBufferFromImage:image presentTime:presentTime]];
-//        }
-//    }
-//
-//}
+
+- (void)releaseFramesUntil:(NSDate *)date {
+    dispatch_async(_onDemandDispatchQueue, ^{
+        while (self->_frames.count > 0 && [self->_frames.firstObject.time compare:date] != NSOrderedDescending) {
+            [self removeOldestFrame];
+        }
+    });
+}
+
+- (void)removeOldestFrame {
+    NSError * error;
+    if (![NSFileManager.defaultManager removeItemAtPath:_frames.firstObject.imagePath error:&error]){
+        SENTRY_LOG_DEBUG(@"Could not delete replay frame at: %@. %@",_frames.firstObject.imagePath, error);
+    }
+    [_frames removeObjectAtIndex:0];
+}
 
 - (void)createVideoOf:(NSTimeInterval)duration from:(NSDate *)beginning
         outputFileURL:(NSURL *)outputFileURL
@@ -112,7 +110,7 @@
         AVVideoWidthKey: @(_videoSize.width),
         AVVideoHeightKey: @(_videoSize.height),
         AVVideoCompressionPropertiesKey: @{
-            AVVideoAverageBitRateKey: @(20000),
+            AVVideoAverageBitRateKey: @(_bitRate),
             AVVideoProfileLevelKey: AVVideoProfileLevelH264BaselineAutoLevel,
         },
     };
@@ -130,8 +128,6 @@
     [videoWriter startWriting];
     [videoWriter startSessionAtSourceTime:kCMTimeZero];
     
-    dispatch_queue_t dispatchQueue = dispatch_queue_create("mediaInputQueue", NULL);
-
     NSDate* end = [beginning dateByAddingTimeInterval:duration];
     __block NSInteger frameCount = 0;
     NSMutableArray<NSString *> * frames = [NSMutableArray array];
@@ -144,7 +140,7 @@
         [frames addObject:frame.imagePath];
     }
     
-    [videoWriterInput requestMediaDataWhenReadyOnQueue:dispatchQueue usingBlock:^{
+    [videoWriterInput requestMediaDataWhenReadyOnQueue:_onDemandDispatchQueue usingBlock:^{
         UIImage *image = [UIImage imageWithContentsOfFile:frames[frameCount]];
         if (image) {
             CMTime presentTime = CMTimeMake(frameCount++, 1);

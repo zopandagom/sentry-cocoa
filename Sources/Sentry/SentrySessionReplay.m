@@ -4,39 +4,48 @@
 #import "SentryViewPhotographer.h"
 #import "SentryOndemandReplay.h"
 #import "SentryAttachment+Private.h"
+#import "SentryLog.h"
 
 //#define use_video 1
 #define use_ondemand 1
 
 @implementation SentrySessionReplay {
     UIView * _rootView;
-    BOOL processingScreenshot;
-    CADisplayLink * displayLink;
-    NSDate * lastScreenShot;
-    NSURL * urlToCache;
-    NSDate * sessionStart;
-    
+    BOOL _processingScreenshot;
+    CADisplayLink * _displayLink;
+    NSDate * _lastScreenShot;
+    NSDate * _videoSegmentStart;
+    NSURL * _urlToCache;
+    NSDate * _sessionStart;
+    SentryReplaySettings * _settings;
 #if use_video
     SentryVideoReplay * replayMaker;
 #elif use_ondemand
-    SentryOndemandReplay * replayMaker;
+    SentryOnDemandReplay * _replayMaker;
 #else
     SentryImagesReplay * replayMaker;
 #endif
     
-    
     NSMutableArray<UIImage *>* imageCollection;
 }
 
-- (void)start:(UIView *)rootView {
+- (instancetype)initWithSettings:(SentryReplaySettings *)replaySettings {
+    if (self = [super init]) {
+        _settings = replaySettings;
+    }
+    return self;
+}
+
+- (void)start:(UIView *)rootView fullSession:(BOOL)full {
     @synchronized (self) {
         _rootView = rootView;
-        lastScreenShot = [[NSDate alloc] init];
-        sessionStart = lastScreenShot;
+        _lastScreenShot = [[NSDate alloc] init];
+        _videoSegmentStart = nil;
+        _sessionStart = _lastScreenShot;
         
-        if (displayLink == nil) {
-            displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(newFrame:)];
-            [displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+        if (_displayLink == nil) {
+            _displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(newFrame:)];
+            [_displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
         } else {
             return;
         }
@@ -44,22 +53,25 @@
         NSURL * docs = [[NSFileManager.defaultManager URLsForDirectory:NSCachesDirectory inDomains:NSUserDomainMask].firstObject URLByAppendingPathComponent:@"io.sentry"];
         
         NSString * currentSession = [NSUUID UUID].UUIDString;
-        urlToCache = [docs URLByAppendingPathComponent:currentSession];
+        _urlToCache = [docs URLByAppendingPathComponent:currentSession];
         
-        if (![NSFileManager.defaultManager fileExistsAtPath:urlToCache.path]) {
-            [NSFileManager.defaultManager createDirectoryAtURL:urlToCache withIntermediateDirectories:YES attributes:nil error:nil];
+        if (![NSFileManager.defaultManager fileExistsAtPath:_urlToCache.path]) {
+            [NSFileManager.defaultManager createDirectoryAtURL:_urlToCache withIntermediateDirectories:YES attributes:nil error:nil];
         }
-        replayMaker =
+        
+        _replayMaker =
 #if use_video
         [[SentryVideoReplay alloc] initWithOutputPath:[urlToCache URLByAppendingPathComponent:@"sr.mp4"].path frameSize:rootView.frame.size framesPerSec:1];
 #elif use_ondemand
-        [[SentryOndemandReplay alloc] initWithOutputPath:urlToCache.path];
+        [[SentryOnDemandReplay alloc] initWithOutputPath:_urlToCache.path];
+        _replayMaker.bitRate = _settings.replayBitRate;
+        _replayMaker.cacheMaxSize = full ? NSUIntegerMax : 32;
 #else
         [[SentryImagesReplay alloc] initWithOutputPath:urlToCache.path];
 #endif
         imageCollection = [NSMutableArray array];
         
-        NSLog(@"Recording session to %@",urlToCache);
+        NSLog(@"Recording session to %@",_urlToCache);
     }
 }
 
@@ -84,12 +96,12 @@
     NSLog(@"Recording session event id %@", event.eventId);
     NSMutableArray<SentryAttachment *> *result = [NSMutableArray arrayWithArray:attachments];
     
-    NSURL * finalPath  = [urlToCache URLByAppendingPathComponent:@"replay.mp4"];
+    NSURL * finalPath  = [_urlToCache URLByAppendingPathComponent:@"replay.mp4"];
     
     dispatch_group_t _wait_for_render = dispatch_group_create();
     
     dispatch_group_enter(_wait_for_render);
-    [replayMaker createVideoOf:30
+    [_replayMaker createVideoOf:30
                           from:[NSDate dateWithTimeIntervalSinceNow:-30]
                  outputFileURL:finalPath
                     completion:^(BOOL success, NSError * _Nonnull error) {
@@ -119,23 +131,60 @@
 - (void)newFrame:(CADisplayLink *)sender {
     NSDate * now = [[NSDate alloc] init];
     
-    if ([now timeIntervalSinceDate:lastScreenShot] > 1) {
+    if ([now timeIntervalSinceDate:_lastScreenShot] > 1) {
         [self takeScreenshot];
-        lastScreenShot = now;
+        _lastScreenShot = now;
+        
+        if (_videoSegmentStart == nil) {
+            _videoSegmentStart = now;
+        } else if ([now timeIntervalSinceDate:_videoSegmentStart] >= 5) {
+            [self prepareSegmentUntil: now];
+        }
     }
 }
 
+- (void)prepareSegmentUntil:(NSDate *)date {
+    NSTimeInterval from = [_videoSegmentStart timeIntervalSinceDate:_sessionStart];
+    NSTimeInterval to = [date timeIntervalSinceDate:_sessionStart];
+    NSURL * pathToSegment = [_urlToCache URLByAppendingPathComponent:@"segments"];
+    
+    if (![NSFileManager.defaultManager fileExistsAtPath:pathToSegment.path]) {
+        NSError * error;
+        if (![NSFileManager.defaultManager createDirectoryAtPath:pathToSegment.path withIntermediateDirectories:YES attributes:nil error:&error]){
+            SENTRY_LOG_ERROR(@"Can't create session replay segment folder. Error: %@", error.localizedDescription);
+            return;
+        }
+    }
+    
+    pathToSegment = [pathToSegment URLByAppendingPathComponent:[NSString stringWithFormat:@"%f-%f.mp4",from, to]];
+    
+    dispatch_group_t _wait_for_render = dispatch_group_create();
+    
+    dispatch_group_enter(_wait_for_render);
+    [_replayMaker createVideoOf:5
+                          from:[date dateByAddingTimeInterval:-5]
+                 outputFileURL:pathToSegment
+                    completion:^(BOOL success, NSError * _Nonnull error) {
+        dispatch_group_leave(_wait_for_render);
+                
+        //Need to send the segment here
+        
+        [self->_replayMaker releaseFramesUntil:date];
+        self->_videoSegmentStart = nil;
+    }];
+   
+}
+
 - (void)takeScreenshot {
-   // measure(^{
-    if (processingScreenshot) { return; }
+    if (_processingScreenshot) { return; }
     @synchronized (self) {
-        if (processingScreenshot) { return; }
-        processingScreenshot = YES;
+        if (_processingScreenshot) { return; }
+        _processingScreenshot = YES;
     }
        
     UIImage* screenshot = [SentryViewPhotographer.shared imageFromUIView:_rootView];
     
-    self->processingScreenshot = NO;
+    _processingScreenshot = NO;
  
     dispatch_queue_t backgroundQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
     dispatch_async(backgroundQueue, ^{
@@ -144,10 +193,9 @@
             
         }];
 #else
-        [self->replayMaker addFrame:screenshot];
+        [self->_replayMaker addFrame:screenshot];
 #endif
     });
 }
-
 
 @end

@@ -4,6 +4,7 @@
 #import <Foundation/Foundation.h>
 #import <SentryDependencyContainer.h>
 #import <SentryOptions+Private.h>
+#import "SentryReplaySettings.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -62,16 +63,21 @@ NS_ASSUME_NONNULL_BEGIN
         return NO;
     }
 
-#    if SENTRY_HAS_UIKIT
     if ((integrationOptions & kIntegrationOptionAttachScreenshot) && !options.attachScreenshot) {
         [self logWithOptionName:@"attachScreenshot"];
         return NO;
     }
-#    endif // SENTRY_HAS_UIKIT
 
     if ((integrationOptions & kIntegrationOptionEnableUserInteractionTracing)
         && !options.enableUserInteractionTracing) {
         [self logWithOptionName:@"enableUserInteractionTracing"];
+        return NO;
+    }
+    
+    if ((integrationOptions & kIntegrationOptionEnableReplay)
+        && options.replaySettings.replaysSessionSampleRate == 0
+        && options.replaySettings.replaysOnErrorSampleRate == 0) {
+        [self logWithReason:@"because both replaysSessionSampleRate and replaysOnErrorSampleRate are 0"];
         return NO;
     }
 #endif

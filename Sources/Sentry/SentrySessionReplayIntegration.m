@@ -6,6 +6,8 @@
 #import "SentryClient+Private.h"
 #import "SentryHub+Private.h"
 #import "SentrySDK+Private.h"
+#import "SentryReplaySettings.h"
+#import "SentryRandom.h"
 
 @implementation SentrySessionReplayIntegration {
     SentrySessionReplay * sessionReplay;
@@ -13,8 +15,18 @@
 
 - (BOOL)installWithOptions:(nonnull SentryOptions *)options
 {
-    sessionReplay = [[SentrySessionReplay alloc] init];
-    [sessionReplay start: SentryDependencyContainer.sharedInstance.application.windows.firstObject];
+    if ([super installWithOptions:options] == NO) {
+        return NO;
+    }
+    
+    if (options.replaySettings.replaysSessionSampleRate == 0 && options.replaySettings.replaysOnErrorSampleRate == 0) {
+        return NO;
+    }
+    
+    sessionReplay = [[SentrySessionReplay alloc] initWithSettings:options.replaySettings];
+        
+    [sessionReplay start:SentryDependencyContainer.sharedInstance.application.windows.firstObject
+             fullSession:[self shouldReplayFullSession:options.replaySettings.replaysSessionSampleRate]];
     
     SentryClient *client = [SentrySDK.currentHub getClient];
     [client addAttachmentProcessor:sessionReplay];
@@ -29,12 +41,16 @@
 
 - (SentryIntegrationOption)integrationOptions
 {
-    return kIntegrationOptionNone;
+    return kIntegrationOptionEnableReplay;
 }
 
 - (void)uninstall
 {
     
+}
+
+- (BOOL)shouldReplayFullSession:(CGFloat)rate {
+    return [SentryDependencyContainer.sharedInstance.random nextNumber] < rate;
 }
 
 @end
