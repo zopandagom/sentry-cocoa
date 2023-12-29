@@ -38,17 +38,18 @@
 
 - (void)start:(UIView *)rootView fullSession:(BOOL)full {
     @synchronized (self) {
-        _rootView = rootView;
-        _lastScreenShot = [[NSDate alloc] init];
-        _videoSegmentStart = nil;
-        _sessionStart = _lastScreenShot;
-        
         if (_displayLink == nil) {
             _displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(newFrame:)];
             [_displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
         } else {
+            //Session display is already running.
             return;
         }
+        
+        _rootView = rootView;
+        _lastScreenShot = [[NSDate alloc] init];
+        _videoSegmentStart = nil;
+        _sessionStart = _lastScreenShot;
         
         NSURL * docs = [[NSFileManager.defaultManager URLsForDirectory:NSCachesDirectory inDomains:NSUserDomainMask].firstObject URLByAppendingPathComponent:@"io.sentry"];
         
@@ -76,6 +77,8 @@
 }
 
 - (void)stop {
+    [_displayLink invalidate];
+    _displayLink = nil;
 #ifdef use_video
     [videoReplay finalizeVideoWithCompletion:^(BOOL success, NSError * _Nonnull error) {
         if (!success) {

@@ -845,6 +845,8 @@
 		D8CB742E294B294B00A5F964 /* MockUIScene.m in Sources */ = {isa = PBXBuildFile; fileRef = D8CB742D294B294B00A5F964 /* MockUIScene.m */; };
 		D8CCFC632A1520C900DE232E /* SentryBinaryImageCacheTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D8CCFC622A1520C900DE232E /* SentryBinaryImageCacheTests.m */; };
 		D8CE69BC277E39C700C6EC5C /* SentryFileIOTrackingIntegrationObjCTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D8CE69BB277E39C700C6EC5C /* SentryFileIOTrackingIntegrationObjCTests.m */; };
+		D8E7F6AF2B3EC9860015D8B4 /* SentryTouchesTracker.h in Headers */ = {isa = PBXBuildFile; fileRef = D8E7F6AD2B3EC9860015D8B4 /* SentryTouchesTracker.h */; };
+		D8E7F6B02B3EC9860015D8B4 /* SentryTouchesTracker.m in Sources */ = {isa = PBXBuildFile; fileRef = D8E7F6AE2B3EC9860015D8B4 /* SentryTouchesTracker.m */; };
 		D8F6A2472885512100320515 /* SentryPredicateDescriptor.m in Sources */ = {isa = PBXBuildFile; fileRef = D8F6A2452885512100320515 /* SentryPredicateDescriptor.m */; };
 		D8F6A24B2885515C00320515 /* SentryPredicateDescriptor.h in Headers */ = {isa = PBXBuildFile; fileRef = D8F6A24A2885515B00320515 /* SentryPredicateDescriptor.h */; };
 		D8F6A24E288553A800320515 /* SentryPredicateDescriptorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8F6A24C2885534E00320515 /* SentryPredicateDescriptorTests.swift */; };
@@ -1849,6 +1851,8 @@
 		D8CB742D294B294B00A5F964 /* MockUIScene.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MockUIScene.m; sourceTree = "<group>"; };
 		D8CCFC622A1520C900DE232E /* SentryBinaryImageCacheTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SentryBinaryImageCacheTests.m; sourceTree = "<group>"; };
 		D8CE69BB277E39C700C6EC5C /* SentryFileIOTrackingIntegrationObjCTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SentryFileIOTrackingIntegrationObjCTests.m; sourceTree = "<group>"; };
+		D8E7F6AD2B3EC9860015D8B4 /* SentryTouchesTracker.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SentryTouchesTracker.h; sourceTree = "<group>"; };
+		D8E7F6AE2B3EC9860015D8B4 /* SentryTouchesTracker.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SentryTouchesTracker.m; sourceTree = "<group>"; };
 		D8F01DE42A126B62008F4996 /* HybridPod.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; path = HybridPod.podspec; sourceTree = "<group>"; };
 		D8F01DE52A126BF5008F4996 /* HybridTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HybridTest.swift; sourceTree = "<group>"; };
 		D8F6A2452885512100320515 /* SentryPredicateDescriptor.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SentryPredicateDescriptor.m; sourceTree = "<group>"; };
@@ -3409,6 +3413,8 @@
 				D80C8E162B31EE5E0018C7F2 /* SentryImagesReplay.m */,
 				D89412A52B3497F40016C0A5 /* SentryOnDemandReplay.h */,
 				D89412A62B3497F40016C0A5 /* SentryOnDemandReplay.m */,
+				D8E7F6AD2B3EC9860015D8B4 /* SentryTouchesTracker.h */,
+				D8E7F6AE2B3EC9860015D8B4 /* SentryTouchesTracker.m */,
 			);
 			name = SessionReplay;
 			sourceTree = "<group>";
@@ -3660,6 +3666,7 @@
 				63AA76991EB9C1C200D153DE /* SentryDefines.h in Headers */,
 				D86B6835294348A400B8B1FC /* SentryAttachment+Private.h in Headers */,
 				84AF45A629A7FFA500FBB177 /* SentryProfiledTracerConcurrency.h in Headers */,
+				D8E7F6AF2B3EC9860015D8B4 /* SentryTouchesTracker.h in Headers */,
 				7B2A70DB27D607CF008B0D15 /* SentryThreadWrapper.h in Headers */,
 				8EAE980B261E9F530073B6B3 /* SentryPerformanceTracker.h in Headers */,
 				63FE718520DA4C1100CDBAE8 /* SentryCrashC.h in Headers */,
@@ -4228,6 +4235,7 @@
 				63FE718120DA4C1100CDBAE8 /* SentryCrashDoctor.m in Sources */,
 				63FE713720DA4C1100CDBAE8 /* SentryCrashCPU_x86_64.c in Sources */,
 				8ECC674725C23A20000E2BF6 /* SentrySpanContext.m in Sources */,
+				D8E7F6B02B3EC9860015D8B4 /* SentryTouchesTracker.m in Sources */,
 				7B18DE4228D9F794004845C6 /* SentryNSNotificationCenterWrapper.m in Sources */,
 				639FCFA91EBC80CC00778193 /* SentryFrame.m in Sources */,
 				D80C8E132B31EB030018C7F2 /* SentryVideoReplay.m in Sources */,

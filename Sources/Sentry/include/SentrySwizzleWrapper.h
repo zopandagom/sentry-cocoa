@@ -9,6 +9,8 @@ NS_ASSUME_NONNULL_BEGIN
 typedef void (^SentrySwizzleSendActionCallback)(
     NSString *actionName, _Nullable id target, _Nullable id sender, UIEvent *_Nullable event);
 
+typedef void (^SentrySwizzleSendEventCallback)(UIEvent *_Nullable event);
+
 /**
  * A wrapper around swizzling for testability and to only swizzle once when multiple implementations
  * need to be called for the same swizzled method.

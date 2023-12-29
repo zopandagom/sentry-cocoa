@@ -19,7 +19,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             options.replaySettings = SentryReplaySettings(replaySessionSampleRate: 1, replaysOnErrorSampleRate: 1)
             options.replaySettings.replayBitRate = 50000
             
-            
             options.beforeSend = { event in
                 return event
             }
@@ -88,7 +87,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     //swiftlint:enable function_body_length
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        
         AppDelegate.startSentry()
         
         if #available(iOS 15.0, *) {

@@ -12,10 +12,15 @@ NS_ASSUME_NONNULL_BEGIN
 static NSMutableDictionary<NSString *, SentrySwizzleSendActionCallback>
     *sentrySwizzleSendActionCallbacks;
 
+static NSMutableDictionary<NSString *, SentrySwizzleSendEventCallback>
+    *sentrySwizzleSendEventCallbacks;
+
 + (void)initialize
 {
+    
     if (self == [SentrySwizzleWrapper class]) {
         sentrySwizzleSendActionCallbacks = [NSMutableDictionary new];
+        sentrySwizzleSendEventCallbacks = [NSMutableDictionary new];
     }
 }
 
@@ -42,9 +47,38 @@ static NSMutableDictionary<NSString *, SentrySwizzleSendActionCallback>
 #    pragma clang diagnostic pop
 }
 
+- (void)swizzleSendEvent:(SentrySwizzleSendEventCallback)callback forKey:(NSString *)key
+{
+    // We need to make a copy of the block to avoid ARC of autoreleasing it.
+    sentrySwizzleSendEventCallbacks[key] = [callback copy];
+    SENTRY_LOG_DEBUG(@"Swizzling sendEvent for %@", key);
+
+    if (sentrySwizzleSendEventCallbacks.count != 1) {
+        return;
+    }
+
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wshadow"
+    static const void *swizzleSendActionKey = &swizzleSendActionKey;
+    SEL selector = NSSelectorFromString(@"sendEvent:");
+    SentrySwizzleInstanceMethod(UIApplication, selector, SentrySWReturnType(BOOL),
+        SentrySWArguments(UIEvent * event), SentrySWReplacement({
+            [SentrySwizzleWrapper sendEventCalled:event];
+            return SentrySWCallOriginal(event);
+        }),
+        SentrySwizzleModeOncePerClassAndSuperclasses, swizzleSendActionKey);
+#    pragma clang diagnostic pop
+}
+
 - (void)removeSwizzleSendActionForKey:(NSString *)key
 {
     [sentrySwizzleSendActionCallbacks removeObjectForKey:key];
+}
+
+
+- (void)removeSwizzleSendEventForKey:(NSString *)key
+{
+    [sentrySwizzleSendEventCallbacks removeObjectForKey:key];
 }
 
 /**
@@ -55,6 +89,13 @@ static NSMutableDictionary<NSString *, SentrySwizzleSendActionCallback>
 {
     for (SentrySwizzleSendActionCallback callback in sentrySwizzleSendActionCallbacks.allValues) {
         callback([NSString stringWithFormat:@"%s", sel_getName(action)], target, sender, event);
+    }
+}
+
++ (void)sendEventCalled:(UIEvent *)event
+{
+    for (SentrySwizzleSendEventCallback callback in sentrySwizzleSendEventCallbacks.allValues) {
+        callback(event);
     }
 }
 
@@ -69,6 +110,7 @@ static NSMutableDictionary<NSString *, SentrySwizzleSendActionCallback>
 - (void)removeAllCallbacks
 {
     [sentrySwizzleSendActionCallbacks removeAllObjects];
+    [sentrySwizzleSendEventCallbacks removeAllObjects];
 }
 
 // For test purpose
