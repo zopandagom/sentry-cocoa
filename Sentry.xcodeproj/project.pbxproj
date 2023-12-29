@@ -1851,7 +1851,7 @@
 		D8CB742D294B294B00A5F964 /* MockUIScene.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MockUIScene.m; sourceTree = "<group>"; };
 		D8CCFC622A1520C900DE232E /* SentryBinaryImageCacheTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SentryBinaryImageCacheTests.m; sourceTree = "<group>"; };
 		D8CE69BB277E39C700C6EC5C /* SentryFileIOTrackingIntegrationObjCTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SentryFileIOTrackingIntegrationObjCTests.m; sourceTree = "<group>"; };
-		D8E7F6AD2B3EC9860015D8B4 /* SentryTouchesTracker.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SentryTouchesTracker.h; sourceTree = "<group>"; };
+		D8E7F6AD2B3EC9860015D8B4 /* SentryTouchesTracker.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SentryTouchesTracker.h; path = include/SentryTouchesTracker.h; sourceTree = "<group>"; };
 		D8E7F6AE2B3EC9860015D8B4 /* SentryTouchesTracker.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SentryTouchesTracker.m; sourceTree = "<group>"; };
 		D8F01DE42A126B62008F4996 /* HybridPod.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; path = HybridPod.podspec; sourceTree = "<group>"; };
 		D8F01DE52A126BF5008F4996 /* HybridTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HybridTest.swift; sourceTree = "<group>"; };
