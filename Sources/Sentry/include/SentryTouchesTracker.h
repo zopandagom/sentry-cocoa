@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic) CGPoint position;
 @property (nonatomic) NSDate * timestamp;
-@property (nonatomic) UIToc
+@property (nonatomic) UITouchPhase touchPhase;
 
 @end
 
@@ -16,6 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)start;
 - (void)stop;
+
+- (NSArray<SentryTouch *> *)touchsFrom:(NSDate *)from to:(NSDate *)to;
 
 @end
 

@@ -19,7 +19,11 @@ typedef void (^SentrySwizzleSendEventCallback)(UIEvent *_Nullable event);
 
 - (void)swizzleSendAction:(SentrySwizzleSendActionCallback)callback forKey:(NSString *)key;
 
+- (void)swizzleSendEvent:(SentrySwizzleSendEventCallback)callback forKey:(NSString *)key;
+
 - (void)removeSwizzleSendActionForKey:(NSString *)key;
+
+- (void)removeSwizzleSendEventForKey:(NSString *)key;
 
 /**
  * For testing purposes.
