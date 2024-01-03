@@ -812,6 +812,8 @@
 		D88817D826D7149100BF2251 /* SentryTraceContext.m in Sources */ = {isa = PBXBuildFile; fileRef = D88817D626D7149100BF2251 /* SentryTraceContext.m */; };
 		D88817DA26D72AB800BF2251 /* SentryTraceContext.h in Headers */ = {isa = PBXBuildFile; fileRef = D88817D926D72AB800BF2251 /* SentryTraceContext.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		D88817DD26D72BA500BF2251 /* SentryTraceStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D88817DB26D72B7B00BF2251 /* SentryTraceStateTests.swift */; };
+		D88F66752B4438F30036536B /* SentryUITouch.h in Headers */ = {isa = PBXBuildFile; fileRef = D88F66732B4438F30036536B /* SentryUITouch.h */; };
+		D88F66762B4438F30036536B /* SentryUITouch.m in Sources */ = {isa = PBXBuildFile; fileRef = D88F66742B4438F30036536B /* SentryUITouch.m */; };
 		D8918B222849FA6D00701F9A /* SentrySDKIntegrationTestsBase.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8918B212849FA6D00701F9A /* SentrySDKIntegrationTestsBase.swift */; };
 		D89412A72B3497F40016C0A5 /* SentryOnDemandReplay.h in Headers */ = {isa = PBXBuildFile; fileRef = D89412A52B3497F40016C0A5 /* SentryOnDemandReplay.h */; };
 		D89412A82B3497F40016C0A5 /* SentryOnDemandReplay.m in Sources */ = {isa = PBXBuildFile; fileRef = D89412A62B3497F40016C0A5 /* SentryOnDemandReplay.m */; };
@@ -1816,6 +1818,8 @@
 		D88817D626D7149100BF2251 /* SentryTraceContext.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SentryTraceContext.m; sourceTree = "<group>"; };
 		D88817D926D72AB800BF2251 /* SentryTraceContext.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SentryTraceContext.h; path = include/SentryTraceContext.h; sourceTree = "<group>"; };
 		D88817DB26D72B7B00BF2251 /* SentryTraceStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentryTraceStateTests.swift; sourceTree = "<group>"; };
+		D88F66732B4438F30036536B /* SentryUITouch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SentryUITouch.h; path = include/SentryUITouch.h; sourceTree = "<group>"; };
+		D88F66742B4438F30036536B /* SentryUITouch.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SentryUITouch.m; sourceTree = "<group>"; };
 		D8918B212849FA6D00701F9A /* SentrySDKIntegrationTestsBase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentrySDKIntegrationTestsBase.swift; sourceTree = "<group>"; };
 		D89412A52B3497F40016C0A5 /* SentryOnDemandReplay.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SentryOnDemandReplay.h; path = include/SentryOnDemandReplay.h; sourceTree = "<group>"; };
 		D89412A62B3497F40016C0A5 /* SentryOnDemandReplay.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SentryOnDemandReplay.m; sourceTree = "<group>"; };
@@ -3415,6 +3419,8 @@
 				D89412A62B3497F40016C0A5 /* SentryOnDemandReplay.m */,
 				D8E7F6AD2B3EC9860015D8B4 /* SentryTouchesTracker.h */,
 				D8E7F6AE2B3EC9860015D8B4 /* SentryTouchesTracker.m */,
+				D88F66732B4438F30036536B /* SentryUITouch.h */,
+				D88F66742B4438F30036536B /* SentryUITouch.m */,
 			);
 			name = SessionReplay;
 			sourceTree = "<group>";
@@ -3814,6 +3820,7 @@
 				D8BFE37229A3782F002E73F3 /* SentryTimeToDisplayTracker.h in Headers */,
 				8E8C57A625EEFC43001CEEFA /* SentryTracesSampler.h in Headers */,
 				7B634599280EB9D100CFA05A /* SentryUIEventTrackingIntegration.h in Headers */,
+				D88F66752B4438F30036536B /* SentryUITouch.h in Headers */,
 				D80C8E1B2B31F4580018C7F2 /* SentrySessionReplayIntegration.h in Headers */,
 				63FE716D20DA4C1100CDBAE8 /* SentryCrashSysCtl.h in Headers */,
 				639889BB1EDED18400EA7442 /* SentrySwizzle.h in Headers */,
@@ -4223,6 +4230,7 @@
 				7BF9EF782722B35D00B5BBEF /* SentrySubClassFinder.m in Sources */,
 				7BCFA71627D0BB50008C662C /* SentryANRTracker.m in Sources */,
 				63EED6C02237923600E02400 /* SentryOptions.m in Sources */,
+				D88F66762B4438F30036536B /* SentryUITouch.m in Sources */,
 				D8CB741B2947286500A5F964 /* SentryEnvelopeItemHeader.m in Sources */,
 				D8CB7417294724CC00A5F964 /* SentryEnvelopeAttachmentHeader.m in Sources */,
 				D84793262788737D00BE8E99 /* SentryByteCountFormatter.m in Sources */,

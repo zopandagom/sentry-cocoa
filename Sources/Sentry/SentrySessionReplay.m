@@ -5,7 +5,7 @@
 #import "SentryOndemandReplay.h"
 #import "SentryAttachment+Private.h"
 #import "SentryLog.h"
-
+#import "SentryTouchesTracker.h"
 //#define use_video 1
 #define use_ondemand 1
 
@@ -27,6 +27,7 @@
 #endif
     
     NSMutableArray<UIImage *>* imageCollection;
+    SentryTouchesTracker * _touchesTracker;
 }
 
 - (instancetype)initWithSettings:(SentryReplaySettings *)replaySettings {
@@ -50,6 +51,8 @@
         _lastScreenShot = [[NSDate alloc] init];
         _videoSegmentStart = nil;
         _sessionStart = _lastScreenShot;
+        _touchesTracker = [[SentryTouchesTracker alloc] init];
+        [_touchesTracker start];
         
         NSURL * docs = [[NSFileManager.defaultManager URLsForDirectory:NSCachesDirectory inDomains:NSUserDomainMask].firstObject URLByAppendingPathComponent:@"io.sentry"];
         

@@ -37,7 +37,8 @@
         _outputPath = outputPath;
         _startTime = [[NSDate alloc] init];
         _frames = [NSMutableArray array];
-        _videoSize = CGSizeMake(300, 651);
+        //_videoSize = CGSizeMake(300, 651);
+        _videoSize = CGSizeMake(200, 434);
         _bitRate = 20000;
         _cacheMaxSize = NSUIntegerMax;
         _onDemandDispatchQueue = dispatch_queue_create("io.sentry.sessionreplay.ondemand", NULL);
