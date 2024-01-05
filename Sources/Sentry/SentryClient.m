@@ -661,6 +661,13 @@ NSString *const DropSessionLogMessage = @"Session has no release name. Won't sen
             [self recordLost:eventIsNotATransaction reason:kSentryDiscardReasonBeforeSend];
         }
     }
+    
+    if (event != nil && [event isKindOfClass:SentryTransaction.class] && self.options.beforeSendTransaction) {
+        event = self.options.beforeSendTransaction((SentryTransaction *)event);
+        if (event == nil) {
+            [self recordLost:eventIsNotATransaction reason:kSentryDiscardReasonBeforeSend];
+        }
+    }
 
     if (isCrashEvent && nil != self.options.onCrashedLastRun && !SentrySDK.crashedLastRunCalled) {
         // We only want to call the callback once. It can occur that multiple crash events are

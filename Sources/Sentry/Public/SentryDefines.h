@@ -42,7 +42,7 @@
     -(instancetype)init NS_UNAVAILABLE;                                                            \
     +(instancetype) new NS_UNAVAILABLE;
 
-@class SentryEvent, SentryBreadcrumb, SentrySamplingContext;
+@class SentryEvent, SentryBreadcrumb, SentrySamplingContext, SentryTransaction;
 @protocol SentrySpan;
 
 /**
@@ -68,6 +68,12 @@ typedef SentryBreadcrumb *_Nullable (^SentryBeforeBreadcrumbCallback)(
  * To avoid sending the event altogether, return nil instead.
  */
 typedef SentryEvent *_Nullable (^SentryBeforeSendEventCallback)(SentryEvent *_Nonnull event);
+
+/**
+ * Block can be used to mutate transactions before its send.
+ * To avoid sending the transaction altogether, return nil instead.
+ */
+typedef SentryTransaction *_Nullable (^SentryBeforeSendTransactionCallback)(SentryTransaction *_Nonnull transaction);
 
 /**
  * A callback to be notified when the last program execution terminated with a crash.
