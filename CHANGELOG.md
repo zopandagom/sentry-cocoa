@@ -1,15 +1,52 @@
 # Changelog
 
-## Unreleased
+## 8.20.0
+
+### Features
+
+- Add visionOS as device family (#3548)
+- Add VisionOS Support for Carthage (#3565)
+
+### Fixes 
+
+- Move header reference out of "extern C" (#3538)
+- Clarify FramesTracker log message (#3570)
+- Fix rare battery breadcrumbs crash (#3582)
+- Fix synchronization issue in FramesTracker (#3571)
+- Fix SentryFileManager logs warning for .DS_Files (#3584)
+- Fix FileManager logs info instead of error when a path doesn't exist (#3594)
+
+## 8.19.0
+
+### Features
+
+- Send debug meta for app start transactions (#3543)
+
+### Fixes
+
+- Fix typo in BUILD_LIBRARY_FOR_DISTRIBUTION variable in Makefile (#3488)
+- Remove dispatch queue metadata collection to fix crash (#3522)
+- Make SentryScope.useSpan non-blocking (#3568)
+- Don't override `sentry-trace` and `baggage` headers (#3540)
+
+## 8.18.0
 
 ### Features
 
 - Add frames delay to transactions and spans (#3487, #3496)
 - Add slow and frozen frames to spans (#3450, #3478)
+- Split up UIKit and App Init App Start Span (#3534)
+- Prewarmed App Start Tracing is stable (#3536)
 
 ### Fixes
 
 - TTFD waits for next drawn frame (#3505)
+- Fix TTID/TTFD for app start transactions (#3512): TTID/TTFD spans and measurements for app start transaction now include the app start duration.
+- Crash when adding a crumb for a timezone change (#3524)
+- Fix a race condition in SentryTracer (#3523)
+- App start ends when first frame is drawn when performanceV2 is enabled (#3530)
+- Use correct rendered frames timestamp for TTID/TTFD and app start (#3531)
+- Missing transactions when not calling `reportFullyDisplayed` (#3477)
 
 ## 8.17.2
 

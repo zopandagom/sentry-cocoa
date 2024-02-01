@@ -18,6 +18,11 @@ on:
       - Gemfile.lock
       - 'Package.swift'
 
+# https://docs.github.com/en/actions/using-jobs/using-concurrency#example-using-a-fallback-value
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   # We had issues that the release build was broken on main.
   # With this we catch potential issues already in the PR.
@@ -86,15 +91,17 @@ jobs:
 
   build-xcframework:
     name: Build XCFramework
-    runs-on: macos-13
+    # The macos-13 uses an Intel processor and doesn't compile the XCFramework for visionOS. 
+    # The large image compiles on arm64 and successfully creates the XCFramework for visionOS.
+    runs-on: macos-13-xlarge
     steps:
       - uses: actions/checkout@v4
-      - run: ./scripts/ci-select-xcode.sh 15.0.1
+      - run: ./scripts/ci-select-xcode.sh 15.2
       - run: make build-xcframework
         shell: sh
 
       - name: Archiving XCFramework.zip
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}
           if-no-files-found: error
@@ -102,7 +109,7 @@ jobs:
             ${{ github.workspace }}/*.zip
 
       - name: Archive build log if failed
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{  failure() || cancelled() }}
         with:
           name: raw-build-output-build-xcframework
@@ -111,14 +118,14 @@ jobs:
 
   validate-xcframework:
     name: Validate XCFramework
-    runs-on: macos-13
+    runs-on: macos-13-xlarge
     needs: build-xcframework
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ${{ github.sha }}
-      - run: ./scripts/ci-select-xcode.sh 15.0.1
+      - run: ./scripts/ci-select-xcode.sh 15.2
       - run: make build-xcframework-sample
         shell: sh
 

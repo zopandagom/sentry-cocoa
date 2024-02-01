@@ -2,7 +2,6 @@
 
 #if SENTRY_HAS_UIKIT
 
-#    import "SentryCurrentDateProvider.h"
 #    import "SentryDependencyContainer.h"
 #    import "SentryFramesTracker.h"
 #    import "SentryMeasurementValue.h"
@@ -66,6 +65,18 @@ SentryTimeToDisplayTracker () <SentryFramesTrackerListener>
 
     [SentryDependencyContainer.sharedInstance.framesTracker addListener:self];
     [tracer setFinishCallback:^(SentryTracer *_tracer) {
+        // If the start time of the tracer changes, which is the case for app start transactions, we
+        // also need to adapt the start time of our spans.
+        self.initialDisplaySpan.startTimestamp = _tracer.startTimestamp;
+        [self addTimeToDisplayMeasurement:self.initialDisplaySpan name:@"time_to_initial_display"];
+
+        if (self.fullDisplaySpan == nil) {
+            return;
+        }
+
+        self.fullDisplaySpan.startTimestamp = _tracer.startTimestamp;
+        [self addTimeToDisplayMeasurement:self.fullDisplaySpan name:@"time_to_full_display"];
+
         if (self.fullDisplaySpan.status != kSentrySpanStatusDeadlineExceeded) {
             return;
         }
@@ -87,17 +98,13 @@ SentryTimeToDisplayTracker () <SentryFramesTrackerListener>
     _fullyDisplayedReported = YES;
 }
 
-- (void)framesTrackerHasNewFrame
+- (void)framesTrackerHasNewFrame:(NSDate *)newFrameDate
 {
-    NSDate *finishTime = [SentryDependencyContainer.sharedInstance.dateProvider date];
-
     // The purpose of TTID and TTFD is to measure how long
     // takes to the content of the screen to change.
     // Thats why we need to wait for the next frame to be drawn.
     if (_initialDisplayReported && self.initialDisplaySpan.isFinished == NO) {
-        self.initialDisplaySpan.timestamp = finishTime;
-
-        [self addTimeToDisplayMeasurement:self.initialDisplaySpan name:@"time_to_initial_display"];
+        self.initialDisplaySpan.timestamp = newFrameDate;
 
         [self.initialDisplaySpan finish];
 
@@ -107,9 +114,7 @@ SentryTimeToDisplayTracker () <SentryFramesTrackerListener>
     }
     if (_waitForFullDisplay && _fullyDisplayedReported && self.fullDisplaySpan.isFinished == NO
         && self.initialDisplaySpan.isFinished == YES) {
-        self.fullDisplaySpan.timestamp = finishTime;
-
-        [self addTimeToDisplayMeasurement:self.fullDisplaySpan name:@"time_to_full_display"];
+        self.fullDisplaySpan.timestamp = newFrameDate;
 
         [self.fullDisplaySpan finish];
     }
