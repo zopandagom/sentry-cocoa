@@ -22,16 +22,12 @@
 
 - (instancetype)initWithDictionary:(NSDictionary*)dictionary {
     if (self = [self init]) {
-        if ([dictionary[@"replaysOnErrorSampleRate"] isKindOfClass:NSNumber.class]) {
-            self.replaysSessionSampleRate = [dictionary[@"replaysOnErrorSampleRate"] floatValue];
+        if ([dictionary[@"replaysSessionSampleRate"] isKindOfClass:NSNumber.class]) {
+            self.replaysSessionSampleRate = [dictionary[@"replaysSessionSampleRate"] floatValue];
         }
         
         if ([dictionary[@"replaysOnErrorSampleRate"] isKindOfClass:NSNumber.class]) {
-            self.replaysSessionSampleRate = [dictionary[@"replaysOnErrorSampleRate"] floatValue];
-        }
-        
-        if ([dictionary[@"replayBitRate"] isKindOfClass:NSNumber.class]) {
-            self.replaysSessionSampleRate = [dictionary[@"replayBitRate"] integerValue];
+            self.replaysOnErrorSampleRate = [dictionary[@"replaysOnErrorSampleRate"] floatValue];
         }
     }
     return self;

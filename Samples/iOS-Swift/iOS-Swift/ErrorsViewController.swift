@@ -7,6 +7,34 @@ class ErrorsViewController: UIViewController {
     @IBOutlet weak var imageView: UIImageView!
     private let dispatchQueue = DispatchQueue(label: "ErrorsViewController", attributes: .concurrent)
     private let diskWriteException = DiskWriteException()
+    private var window : UIWindow?
+    
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        let button = UIButton(type: .custom)
+        button.setTitle("Take Screenshot", for: .normal)
+        window = UIApplication.shared.delegate?.window!
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            button.frame = CGRect(x: 0, y: 700, width: self.view.frame.width, height: 30)
+            button.backgroundColor = .orange
+            button.addTarget(self, action: #selector(self.takeScreenshot(_:)), for: .touchUpInside)
+            self.window?.addSubview(button)
+        }
+    }
+    
+    @objc
+    private func takeScreenshot(_ sender : UIButton) {
+        let image = SentryViewPhotographer.shared.image(from: window!)
+        
+        let vc = UIViewController()
+        vc.view = UIImageView(image: image)
+        
+        self.present(vc, animated: true)
+        
+    }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)

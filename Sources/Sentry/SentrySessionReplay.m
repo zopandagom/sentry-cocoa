@@ -38,6 +38,11 @@
 }
 
 - (void)start:(UIView *)rootView fullSession:(BOOL)full {
+    if (rootView == nil) {
+        SENTRY_LOG_DEBUG(@"rootView cannot be nil. Session replay will not be recorded.");
+        return;
+    }
+    
     @synchronized (self) {
         if (_displayLink == nil) {
             _displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(newFrame:)];

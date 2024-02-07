@@ -1,10 +1,8 @@
 #import "SentryViewPhotographer.h"
 
 @implementation SentryViewPhotographer {
-    Class _CGDrawingViewClass;
-    Class _UIShapeHitTestingView;
-    Class _UIGraphicsView;
-    Class _ImageLayer;
+    NSMutableArray<Class> * _ignoreClasses;
+    NSMutableArray<Class> * _redactClasses;
 }
 
 +(SentryViewPhotographer *)shared {
@@ -19,10 +17,27 @@
 
 -(instancetype)init {
     if (self = [super init]) {
-        _CGDrawingViewClass = NSClassFromString(@"_TtCOCV7SwiftUI11DisplayList11ViewUpdater8Platform13CGDrawingView");
-        _UIShapeHitTestingView = NSClassFromString(@"_TtC7SwiftUIP33_A34643117F00277B93DEBAB70EC0697122_UIShapeHitTestingView");
-        _UIGraphicsView = NSClassFromString(@"SwiftUI._UIGraphicsView");
-        _ImageLayer = NSClassFromString(@"SwiftUI.ImageLayer");
+        _ignoreClasses = @[
+            UISlider.class,
+            UISwitch.class
+        ].mutableCopy;
+        
+        _redactClasses = @[
+            UILabel.class,
+            UITextView.class,
+            UITextField.class
+        ].mutableCopy;
+        
+        Class viewClass = NSClassFromString(@"RCTTextView");
+        if (viewClass != nil) {[_redactClasses addObject:viewClass];}
+        viewClass = NSClassFromString(@"_TtCOCV7SwiftUI11DisplayList11ViewUpdater8Platform13CGDrawingView");
+        if (viewClass != nil) {[_redactClasses addObject:viewClass];}
+        viewClass = NSClassFromString(@"_TtC7SwiftUIP33_A34643117F00277B93DEBAB70EC0697122_UIShapeHitTestingView");
+        if (viewClass != nil) {[_redactClasses addObject:viewClass];}
+        viewClass = NSClassFromString(@"SwiftUI._UIGraphicsView");
+        if (viewClass != nil) {[_redactClasses addObject:viewClass];}
+        viewClass = NSClassFromString(@"SwiftUI.ImageLayer");
+        if (viewClass != nil) {[_redactClasses addObject:viewClass];}
     }
     return self;
 }
@@ -42,35 +57,8 @@
 }
 
 - (void)maskText:(UIView *)view context:(CGContextRef)context {
-//    CGRect mask = [view convertRect:view.bounds toView:nil];
-//    CGRect tfRect = CGRectMake(52,111, 299, 19);
-//    //x = 52, y = 111), size = (width = 299, height = 19)
-//    if (CGRectIntersectsRect(mask, tfRect)) {
-//        NSLog(@"intersection");
-//    }
-//
-//    if ([view isKindOfClass:UITextField.class]) {
-//        NSLog(@"dae");
-//    }
-//    
-//    if ([self shouldRedact:view]) {
-//        [UIColor.orangeColor setStroke];
-//        CGContextSetLineWidth(context, 4);
-//        CGContextStrokeRect(context, mask);
-//        CGContextFillRect(context, mask);
-//    } else {
-//        if ([self isOpaqueOrHasBackground:view]) {
-//            [UIColor.greenColor setStroke];
-//            CGContextSetLineWidth(context, 2);
-//            CGContextStrokeRect(context, mask);
-//        }
-//        for (UIView * child in view.subviews) {
-//            [self maskText:child context:context];
-//        }
-//    }
-
     [UIColor.blackColor setFill];
-    CGPathRef maskPath = [self buildPathForView:view inPath:CGPathCreateMutable()];
+    CGPathRef maskPath = [self buildPathForView:view inPath:CGPathCreateMutable() visibleArea:view.frame];
     CGContextAddPath(context, maskPath);
     CGContextFillPath(context);
 }
@@ -79,16 +67,23 @@
     return [view isKindOfClass:UISwitch.class];
 }
 
+- (BOOL)shouldIgnore:(UIView *)view {
+    for (Class class in _ignoreClasses) {
+        if ([view isKindOfClass:class]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 - (BOOL)shouldRedact:(UIView *)view {
-    return !view.isHidden && view.alpha > 0 && (
-    [view isKindOfClass:UILabel.class]
-    || [view isKindOfClass:UITextField.class]
-    || [view isKindOfClass:UITextView.class]
-    || [view isKindOfClass:_CGDrawingViewClass]
-    || [view isKindOfClass:_UIShapeHitTestingView]
-    || ([view isKindOfClass:_UIGraphicsView] && [view.layer isKindOfClass:_ImageLayer])
-    || ([view isKindOfClass:UIImageView.class] && [self shouldRedactImageView:(UIImageView *)view])
-                             );
+    for (Class class in _redactClasses) {
+        if ([view isKindOfClass:class]) {
+            return true;
+        }
+    }
+    
+    return ([view isKindOfClass:UIImageView.class] && [self shouldRedactImageView:(UIImageView *)view]);
 }
 
 - (BOOL)shouldRedactImageView:(UIImageView *)imageView {
@@ -97,21 +92,33 @@
     && (imageView.image.size.width > 10 && imageView.image.size.height > 10); //This is to avoid redact gradient backgroud that are usually small lines repeating
 }
 
-- (CGMutablePathRef)buildPathForView:(UIView *)view inPath:(CGMutablePathRef)path {
+- (CGMutablePathRef)buildPathForView:(UIView *)view inPath:(CGMutablePathRef)path visibleArea:(CGRect)area {
     CGRect rectInWindow = [view convertRect:view.bounds toView:nil];
-        
-    if ([self shouldRedact:view]) {
+
+    if (!CGRectIntersectsRect(area, rectInWindow)) {
+        return path;
+    }
+    
+    if (view.hidden || view.alpha == 0) {
+        return path;
+    }
+    
+    BOOL ignore = [self shouldIgnore:view];
+    if (!ignore && [self shouldRedact:view]) {
         CGPathAddRect(path, NULL, rectInWindow);
+        return path;
     } else if ([self isOpaqueOrHasBackground:view]) {
         CGMutablePathRef newPath = [self excludeRect:rectInWindow fromPath:path];
         CGPathRelease(path);
         path = newPath;
     }
-
-    for (UIView *subview in view.subviews) {
-        path = [self buildPathForView:subview inPath:path];
-    }
     
+    if (!ignore) {
+        for (UIView *subview in view.subviews) {
+            path = [self buildPathForView:subview inPath:path visibleArea:area];
+        }
+    }
+
     return path;
 }
 
@@ -125,7 +132,7 @@
 }
 
 - (BOOL)isOpaqueOrHasBackground:(UIView *)view {
-    return (view.backgroundColor != nil && CGColorGetAlpha(view.backgroundColor.CGColor) > 0.9);
+    return view.isOpaque || (view.backgroundColor != nil && CGColorGetAlpha(view.backgroundColor.CGColor) > 0.9);
 }
 
 @end

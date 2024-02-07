@@ -5,6 +5,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+NS_SWIFT_NAME(Client)
 @interface SentryClient : NSObject
 SENTRY_NO_INIT
 

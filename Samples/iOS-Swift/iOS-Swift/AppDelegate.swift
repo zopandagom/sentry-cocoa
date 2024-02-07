@@ -16,8 +16,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         SentrySDK.start { options in
             options.dsn = dsn
-            options.replaySettings = SentryReplaySettings(replaySessionSampleRate: 1, replaysOnErrorSampleRate: 1)
-            options.replaySettings.replayBitRate = 50000
+            //options.replaySettings = SentryReplaySettings(replaySessionSampleRate: 1, replaysOnErrorSampleRate: 1)
+            //options.replaySettings.replayBitRate = 50000
             
             options.beforeSend = { event in
                 return event

@@ -6,3 +6,12 @@
 + (NSDictionary *)extractDataFromView:(UIView *)view;
 
 @end
+
+
+@interface SentryViewPhotographer : NSObject
+
+@property (nonatomic, readonly, class) SentryViewPhotographer* shared;
+
+-(UIImage*)imageFromUIView:(UIView *)view;
+
+@end
