@@ -206,7 +206,10 @@ class ExtraViewController: UIViewController, URLSessionDelegate {
     }()
     
     @IBAction func testDuplicateCall(_ sender: UIButton) {
-        guard let url = URL(string: "https://jsonplaceholder.typicode.com/posts") else {
+        let urlString = "https://jsonplaceholder.typicode.com/posts"
+//        // Http redirect
+//        let urlString = "https://httpbin.org/redirect-to?url=https://jsonplaceholder.typicode.com/posts&status_code=302"
+        guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
         }
