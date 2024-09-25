@@ -2,7 +2,7 @@ import Foundation
 import Sentry
 import UIKit
 
-class ExtraViewController: UIViewController {
+class ExtraViewController: UIViewController, URLSessionDelegate {
 
     @IBOutlet weak var dsnTextField: UITextField!
     @IBOutlet weak var framesLabel: UILabel!
@@ -185,6 +185,60 @@ class ExtraViewController: UIViewController {
         for i in 0..<100_000_000 {
             a.append(String(i))
         }
+    }
+    
+    private lazy var urlSessionConfiguration: URLSessionConfiguration = {
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 30.0
+        configuration.timeoutIntervalForResource = 60.0
+        configuration.httpCookieAcceptPolicy = .onlyFromMainDocumentDomain
+        configuration.httpShouldSetCookies = true
+        return configuration
+    }()
+
+    private lazy var urlSession: URLSession = {
+        let urlSession = URLSession(
+            configuration: urlSessionConfiguration,
+            delegate: self,
+            delegateQueue: nil
+        )
+        return urlSession
+    }()
+    
+    @IBAction func testDuplicateCall(_ sender: UIButton) {
+        guard let url = URL(string: "https://jsonplaceholder.typicode.com/posts") else {
+            print("Invalid URL")
+            return
+        }
+
+        let task = urlSession.dataTask(with: url) { data, response, error in
+            // Handle errors
+            if let error = error {
+                print("Error: \(error.localizedDescription)")
+                return
+            }
+
+            // Check for valid HTTP response
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                // Ensure there is data
+                if let data = data {
+                    do {
+                        // Parse the JSON data
+                        let jsonData = try JSONSerialization.jsonObject(with: data, options: [])
+                        print("Data: \(jsonData)")
+                    } catch {
+                        print("Failed to parse JSON: \(error.localizedDescription)")
+                    }
+                } else {
+                    print("No data received")
+                }
+            } else {
+                print("Invalid response or status code")
+            }
+        }
+
+        // Start the network task
+        task.resume()
     }
 
     private func calcPi() -> Double {

@@ -9,6 +9,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     static let defaultDSN = "https://6cc9bae94def43cab8444a99e0031c28@o447951.ingest.sentry.io/5428557"
+    
+    static func startSentryDuplicateDebug() {
+        SentrySDK.start { options in
+            options.dsn = AppDelegate.defaultDSN
+            options.swiftAsyncStacktraces = true
+            options.debug = true
+            options.enableAppLaunchProfiling = true
+            options.tracesSampleRate = 1.0
+            options.profilesSampleRate = 1.0
+            options.enableNetworkTracking = true
+            options.enableUserInteractionTracing = true
+        }
+    }
 
     //swiftlint:disable function_body_length
     static func startSentry() {
@@ -149,7 +162,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if ProcessInfo.processInfo.arguments.contains("--io.sentry.wipe-data") {
             removeAppData()
         }
-        AppDelegate.startSentry()
+        //AppDelegate.startSentry()
+        AppDelegate.startSentryDuplicateDebug()
         
         randomDistributionTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
             let random = Double.random(in: 0..<1_000)

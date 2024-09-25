@@ -3,7 +3,7 @@
     <device id="retina4_0" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22684"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22685"/>
         <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="System colors in document resources" minToolsVersion="11.0"/>
@@ -831,10 +831,10 @@
                                 <rect key="frame" x="8" y="80" width="304" height="455"/>
                                 <subviews>
                                     <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" translatesAutoresizingMaskIntoConstraints="NO" id="Yzg-QH-aPg">
-                                        <rect key="frame" x="0.0" y="0.0" width="304" height="224"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="304" height="252"/>
                                         <subviews>
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="equalSpacing" translatesAutoresizingMaskIntoConstraints="NO" id="FaL-DP-Rl6">
-                                                <rect key="frame" x="0.0" y="0.0" width="152" height="224"/>
+                                                <rect key="frame" x="0.0" y="0.0" width="152" height="252"/>
                                                 <subviews>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oag-iN-lAn">
                                                         <rect key="frame" x="0.0" y="0.0" width="152" height="28"/>
@@ -904,10 +904,19 @@
                                                             <action selector="causeFrozenFrames:" destination="VqS-l1-kwe" eventType="touchUpInside" id="B96-yJ-Yof"/>
                                                         </connections>
                                                     </button>
+                                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="JbP-rb-l1e">
+                                                        <rect key="frame" x="0.0" y="224" width="152" height="28"/>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="13"/>
+                                                        <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                                        <state key="normal" title="Duplicate HTTP Debug"/>
+                                                        <connections>
+                                                            <action selector="testDuplicateCall:" destination="VqS-l1-kwe" eventType="touchUpInside" id="DRn-Y3-4Hd"/>
+                                                        </connections>
+                                                    </button>
                                                 </subviews>
                                             </stackView>
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="equalSpacing" translatesAutoresizingMaskIntoConstraints="NO" id="ULj-Tl-kYs">
-                                                <rect key="frame" x="152" y="0.0" width="152" height="224"/>
+                                                <rect key="frame" x="152" y="0.0" width="152" height="252"/>
                                                 <subviews>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="weS-d7-IY1">
                                                         <rect key="frame" x="0.0" y="0.0" width="152" height="28"/>
@@ -918,7 +927,7 @@
                                                         </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ckT-1E-GWZ">
-                                                        <rect key="frame" x="0.0" y="32.5" width="152" height="28"/>
+                                                        <rect key="frame" x="0.0" y="37.5" width="152" height="28"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="13"/>
                                                         <state key="normal" title="Close SDK"/>
                                                         <connections>
@@ -926,7 +935,7 @@
                                                         </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="rpD-Rf-xbz">
-                                                        <rect key="frame" x="0.0" y="65.5" width="152" height="28"/>
+                                                        <rect key="frame" x="0.0" y="74.5" width="152" height="28"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="13"/>
                                                         <state key="normal" title="ANR fully blocking"/>
                                                         <connections>
@@ -934,7 +943,7 @@
                                                         </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="2e4-48-rLl">
-                                                        <rect key="frame" x="0.0" y="98" width="152" height="28"/>
+                                                        <rect key="frame" x="0.0" y="112" width="152" height="28"/>
                                                         <accessibility key="accessibilityConfiguration" identifier="anrFillingRunLoopExtra"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="13"/>
                                                         <state key="normal" title="ANR filling run loop"/>
@@ -943,7 +952,7 @@
                                                         </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="F0l-xf-cQd">
-                                                        <rect key="frame" x="0.0" y="130.5" width="152" height="28"/>
+                                                        <rect key="frame" x="0.0" y="149.5" width="152" height="28"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="13"/>
                                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
                                                         <state key="normal" title="Start 100 threads"/>
@@ -952,7 +961,7 @@
                                                         </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Evt-B9-zEC">
-                                                        <rect key="frame" x="0.0" y="163.5" width="152" height="28"/>
+                                                        <rect key="frame" x="0.0" y="186.5" width="152" height="28"/>
                                                         <accessibility key="accessibilityConfiguration" identifier="breadcrumbInfoButton"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="13"/>
                                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
@@ -962,7 +971,7 @@
                                                         </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="5U2-RQ-FCu">
-                                                        <rect key="frame" x="0.0" y="196" width="152" height="28"/>
+                                                        <rect key="frame" x="0.0" y="224" width="152" height="28"/>
                                                         <accessibility key="accessibilityConfiguration" identifier="TOPVCBTN"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="13"/>
                                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
@@ -976,22 +985,22 @@
                                         </subviews>
                                     </stackView>
                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" translatesAutoresizingMaskIntoConstraints="NO" id="omd-Rj-xhq">
-                                        <rect key="frame" x="0.0" y="224" width="304" height="231"/>
+                                        <rect key="frame" x="0.0" y="252" width="304" height="203"/>
                                         <subviews>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="eMF-4u-JGE">
-                                                <rect key="frame" x="8" y="32" width="288" height="29"/>
+                                                <rect key="frame" x="8" y="32" width="288" height="24.5"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                 <nil key="textColor"/>
                                                 <nil key="highlightedColor"/>
                                             </label>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="DSN  " textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="FXp-oI-RdR">
-                                                <rect key="frame" x="8" y="61" width="288" height="29.5"/>
+                                                <rect key="frame" x="8" y="56.5" width="288" height="24.5"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                 <nil key="textColor"/>
                                                 <nil key="highlightedColor"/>
                                             </label>
                                             <textField opaque="NO" contentMode="scaleToFill" verticalHuggingPriority="249" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" textAlignment="natural" minimumFontSize="17" clearButtonMode="whileEditing" translatesAutoresizingMaskIntoConstraints="NO" id="wzO-lb-yFR">
-                                                <rect key="frame" x="8" y="90.5" width="288" height="29"/>
+                                                <rect key="frame" x="8" y="81" width="288" height="24.5"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                                 <textInputTraits key="textInputTraits"/>
                                                 <connections>
@@ -999,21 +1008,21 @@
                                                 </connections>
                                             </textField>
                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="te3-IR-L1y">
-                                                <rect key="frame" x="8" y="119.5" width="288" height="29"/>
+                                                <rect key="frame" x="8" y="105.5" width="288" height="24.5"/>
                                                 <state key="normal" title="Reset DSN"/>
                                                 <connections>
                                                     <action selector="resetDSN:" destination="VqS-l1-kwe" eventType="touchUpInside" id="3LJ-al-JGc"/>
                                                 </connections>
                                             </button>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Frames" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="xua-qE-dXN" userLabel="frames">
-                                                <rect key="frame" x="8" y="148.5" width="288" height="29.5"/>
+                                                <rect key="frame" x="8" y="130" width="288" height="24.5"/>
                                                 <accessibility key="accessibilityConfiguration" identifier="framesStatsLabel"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                 <nil key="textColor"/>
                                                 <nil key="highlightedColor"/>
                                             </label>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Last breadcrumb" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="4M5-qM-BM9" userLabel="breadcrumb">
-                                                <rect key="frame" x="8" y="178" width="288" height="29"/>
+                                                <rect key="frame" x="8" y="154.5" width="288" height="24.5"/>
                                                 <accessibility key="accessibilityConfiguration" identifier="breadcrumbLabel"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                 <nil key="textColor"/>
@@ -1127,7 +1136,7 @@
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemGray5Color">
-            <color red="0.89803921568627454" green="0.89803921568627454" blue="0.91764705882352937" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.8980392157" green="0.8980392157" blue="0.91764705879999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>
