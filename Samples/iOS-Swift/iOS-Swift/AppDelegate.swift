@@ -1,4 +1,5 @@
 import Sentry
+import TrustKit
 import UIKit
 
 @UIApplicationMain
@@ -9,6 +10,39 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     static let defaultDSN = "https://6cc9bae94def43cab8444a99e0031c28@o447951.ingest.sentry.io/5428557"
+    
+    static func initTrustKit() {
+        let trustKitConfig = [
+            kTSKSwizzleNetworkDelegates: true,
+            kTSKPinnedDomains: [
+                "typicode.com": [
+                    kTSKEnforcePinning: false,
+                    kTSKDisableDefaultReportUri: true,
+                    kTSKIncludeSubdomains: true,
+                    kTSKExcludeSubdomainFromParentPolicy: false,
+                    kTSKPublicKeyHashes: [
+                        "SUpzhpw7gq7qNNY74QLoVdwkYOnStrJQuDYy229aPlE=",
+                        "0EV7+JtTXOoUo3duzaq2uZITKBpL+t9Ixi6/LwzQYeM="
+                    ]
+                ],
+                "github.com": [
+                    kTSKEnforcePinning: true,
+                    kTSKDisableDefaultReportUri: true,
+                    kTSKIncludeSubdomains: true,
+                    kTSKExcludeSubdomainFromParentPolicy: false,
+                    kTSKPublicKeyHashes: [
+                        "lmo8/KPXoMsxI+J9hY+ibNm2r0IYChmOsF9BxD74PVc=",
+                        "L/rrcKbvfFSZlhpyZ80u5pH0HHMjJEmdpkdUEC4sz18="
+                    ]
+                ]
+            ]] as [String: Any]
+        
+        TrustKit.initSharedInstance(withConfiguration: trustKitConfig)
+        
+        TrustKit.setLoggerBlock { message in
+            print("TrustKit log: \(message)")
+        }
+    }
     
     static func startSentryDuplicateDebug() {
         SentrySDK.start { options in
@@ -162,9 +196,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if ProcessInfo.processInfo.arguments.contains("--io.sentry.wipe-data") {
             removeAppData()
         }
+        
+        AppDelegate.initTrustKit()
+
         //AppDelegate.startSentry()
         AppDelegate.startSentryDuplicateDebug()
-        
+
         randomDistributionTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
             let random = Double.random(in: 0..<1_000)
             SentrySDK.metrics.distribution(key: "random.distribution", value: random)
