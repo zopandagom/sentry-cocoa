@@ -7,6 +7,7 @@
 #import "SentryBreadcrumb.h"
 #import "SentryClient+Private.h"
 #import "SentryCrash.h"
+#import "SentryCrashC.h"
 #import "SentryCrashWrapper.h"
 #import "SentryDependencyContainer.h"
 #import "SentryDispatchQueueWrapper.h"
@@ -23,6 +24,7 @@
 #import "SentryScope.h"
 #import "SentrySerialization.h"
 #import "SentrySwift.h"
+#import "SentryTracer.h"
 #import "SentryTransactionContext.h"
 #import "SentryUserFeedbackIntegrationShell.h"
 
@@ -255,6 +257,19 @@ static NSDate *_Nullable startTimestamp = nil;
     }];
 
     SENTRY_LOG_DEBUG(@"SDK initialized! Version: %@", SentryMeta.versionString);
+
+    sentrycrash_setOnCrashCallback(&onCrashCallback);
+}
+
+void
+onCrashCallback(void)
+{
+    SENTRY_LOG_DEBUG(@"Philipp: OnCrash");
+
+    id<SentrySpan> span = SentrySDK.currentHub.scope.span;
+    if (span != nil && [span isKindOfClass:[SentryTracer class]]) {
+        [span finishWithStatus:kSentrySpanStatusInternalError];
+    }
 }
 
 + (void)startWithConfigureOptions:(void (^)(SentryOptions *options))configureOptions

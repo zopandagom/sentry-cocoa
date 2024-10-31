@@ -26,6 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (NSArray<id<SentryTransport>> *)initTransports:(SentryOptions *)options
                                sentryFileManager:(SentryFileManager *)sentryFileManager
                              currentDateProvider:(id<SentryCurrentDateProvider>)currentDateProvider
+                                    crashWrapper:(SentryCrashWrapper *)crashWrapper
 {
     NSURLSession *session;
 
@@ -72,7 +73,8 @@ NS_ASSUME_NONNULL_BEGIN
                                       requestBuilder:requestBuilder
                                           rateLimits:rateLimits
                                    envelopeRateLimit:envelopeRateLimit
-                                dispatchQueueWrapper:dispatchQueueWrapper];
+                                dispatchQueueWrapper:dispatchQueueWrapper
+                                        crashWrapper:crashWrapper];
 
     if (options.enableSpotlight) {
         SentrySpotlightTransport *spotlightTransport =

@@ -50,8 +50,8 @@
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
-      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
-      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      selectedDebuggerIdentifier = ""
+      selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
@@ -71,18 +71,6 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "--disable-file-io-tracing"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "--io.sentry.iOS-Swift.user-feedback.no-widget-icon"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "--io.sentry.iOS-Swift.user-feedback.no-widget-text"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "--io.sentry.iOS-Swift.user-feedback.all-defaults"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
@@ -175,7 +163,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--io.sentry.iOS-Swift.auto-inject-user-feedback-widget"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
       <EnvironmentVariables>

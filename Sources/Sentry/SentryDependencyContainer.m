@@ -89,7 +89,6 @@ static NSObject *sentryDependencyContainerLock;
 - (instancetype)init
 {
     if (self = [super init]) {
-        _dispatchQueueWrapper = [[SentryDispatchQueueWrapper alloc] init];
         _random = [[SentryRandom alloc] init];
         _threadWrapper = [[SentryThreadWrapper alloc] init];
         _binaryImageCache = [[SentryBinaryImageCache alloc] init];
@@ -126,6 +125,19 @@ static NSObject *sentryDependencyContainerLock;
         }
         return _appStateManager;
     }
+}
+
+- (SentryDispatchQueueWrapper *)dispatchQueueWrapper SENTRY_DISABLE_THREAD_SANITIZER(
+    "double-checked lock produce false alarms")
+{
+    if (_dispatchQueueWrapper == nil) {
+        @synchronized(sentryDependencyContainerLock) {
+            if (_dispatchQueueWrapper == nil) {
+                _dispatchQueueWrapper = [[SentryDispatchQueueWrapper alloc] init];
+            }
+        }
+    }
+    return _dispatchQueueWrapper;
 }
 
 - (SentryCrashWrapper *)crashWrapper SENTRY_DISABLE_THREAD_SANITIZER(

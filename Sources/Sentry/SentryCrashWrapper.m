@@ -11,6 +11,7 @@
 #import <SentryCrashDebug.h>
 #import <SentryCrashMonitor_System.h>
 #import <SentryDependencyContainer.h>
+#import <SentryLog.h>
 #include <mach/mach.h>
 
 #if SENTRY_HAS_UIKIT
@@ -69,6 +70,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)isApplicationInForeground
 {
     return sentrycrashstate_currentState()->applicationIsInForeground;
+}
+
+- (BOOL)crashedThisLaunch
+{
+    return sentrycrashstate_currentState()->crashedThisLaunch;
 }
 
 - (NSDictionary *)systemInfo

@@ -1,5 +1,6 @@
 #import "SentryHttpTransport.h"
 #import "SentryClientReport.h"
+#import "SentryCrashWrapper.h"
 #import "SentryDataCategory.h"
 #import "SentryDataCategoryMapper.h"
 #import "SentryDependencyContainer.h"
@@ -38,6 +39,7 @@
 @property (nonatomic, strong) id<SentryRateLimits> rateLimits;
 @property (nonatomic, strong) SentryEnvelopeRateLimit *envelopeRateLimit;
 @property (nonatomic, strong) SentryDispatchQueueWrapper *dispatchQueue;
+@property (nonatomic, strong) SentryCrashWrapper *crashWrapper;
 @property (nonatomic, strong) dispatch_group_t dispatchGroup;
 
 #if defined(TEST) || defined(TESTCI) || defined(DEBUG)
@@ -75,6 +77,7 @@
                  rateLimits:(id<SentryRateLimits>)rateLimits
           envelopeRateLimit:(SentryEnvelopeRateLimit *)envelopeRateLimit
        dispatchQueueWrapper:(SentryDispatchQueueWrapper *)dispatchQueueWrapper
+               crashWrapper:(SentryCrashWrapper *)crashWrapper
 {
     if (self = [super init]) {
         self.options = options;
@@ -85,6 +88,7 @@
         self.rateLimits = rateLimits;
         self.envelopeRateLimit = envelopeRateLimit;
         self.dispatchQueue = dispatchQueueWrapper;
+        self.crashWrapper = crashWrapper;
         self.dispatchGroup = dispatch_group_create();
         _isSending = NO;
         _isFlushing = NO;
@@ -121,6 +125,14 @@
 
 - (void)sendEnvelope:(SentryEnvelope *)envelope
 {
+    if (self.crashWrapper.crashedThisLaunch) {
+        SENTRY_LOG_DEBUG(@"Philipp: Storing envelope");
+        [self.fileManager storeEnvelope:envelope];
+        return;
+    } else {
+        SENTRY_LOG_DEBUG(@"Philipp: Sending envelope");
+    }
+
     envelope = [self.envelopeRateLimit removeRateLimitedItems:envelope];
 
     if (envelope.items.count == 0) {
@@ -281,6 +293,10 @@
 
 - (void)sendAllCachedEnvelopes
 {
+    if (self.crashWrapper.crashedThisLaunch) {
+        return;
+    }
+
     SENTRY_LOG_DEBUG(@"sendAllCachedEnvelopes start.");
 
     @synchronized(self) {

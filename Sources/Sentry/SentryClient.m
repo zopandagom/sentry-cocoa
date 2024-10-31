@@ -73,13 +73,15 @@ NSString *const DropSessionLogMessage = @"Session has no release name. Won't sen
 {
     return [self initWithOptions:options
                    dispatchQueue:[[SentryDispatchQueueWrapper alloc] init]
-          deleteOldEnvelopeItems:YES];
+          deleteOldEnvelopeItems:YES
+                    crashWrapper:SentryDependencyContainer.sharedInstance.crashWrapper];
 }
 
 /** Internal constructor for testing purposes. */
 - (nullable instancetype)initWithOptions:(SentryOptions *)options
                            dispatchQueue:(SentryDispatchQueueWrapper *)dispatchQueue
                   deleteOldEnvelopeItems:(BOOL)deleteOldEnvelopeItems
+                            crashWrapper:(SentryCrashWrapper *)crashWrapper
 {
     NSError *error;
     SentryFileManager *fileManager = [[SentryFileManager alloc] initWithOptions:options
@@ -91,18 +93,21 @@ NSString *const DropSessionLogMessage = @"Session has no release name. Won't sen
     }
     return [self initWithOptions:options
                      fileManager:fileManager
-          deleteOldEnvelopeItems:deleteOldEnvelopeItems];
+          deleteOldEnvelopeItems:deleteOldEnvelopeItems
+                    crashWrapper:crashWrapper];
 }
 
 /** Internal constructor for testing purposes. */
 - (instancetype)initWithOptions:(SentryOptions *)options
                     fileManager:(SentryFileManager *)fileManager
          deleteOldEnvelopeItems:(BOOL)deleteOldEnvelopeItems
+                   crashWrapper:(SentryCrashWrapper *)crashWrapper
 {
-    NSArray<id<SentryTransport>> *transports = [SentryTransportFactory
-             initTransports:options
-          sentryFileManager:fileManager
-        currentDateProvider:SentryDependencyContainer.sharedInstance.dateProvider];
+    NSArray<id<SentryTransport>> *transports =
+        [SentryTransportFactory initTransports:options
+                             sentryFileManager:fileManager
+                           currentDateProvider:SentryDependencyContainer.sharedInstance.dateProvider
+                                  crashWrapper:crashWrapper];
 
     SentryTransportAdapter *transportAdapter =
         [[SentryTransportAdapter alloc] initWithTransports:transports options:options];
@@ -365,6 +370,7 @@ NSString *const DropSessionLogMessage = @"Session has no release name. Won't sen
                   withScope:(SentryScope *)scope
     additionalEnvelopeItems:(NSArray<SentryEnvelopeItem *> *)additionalEnvelopeItems
 {
+    SENTRY_LOG_DEBUG(@"Philipp: send event");
     return [self sendEvent:event
                       withScope:scope
          alwaysAttachStacktrace:NO
@@ -430,12 +436,15 @@ NSString *const DropSessionLogMessage = @"Session has no release name. Won't sen
                isCrashEvent:(BOOL)isCrashEvent
     additionalEnvelopeItems:(NSArray<SentryEnvelopeItem *> *)additionalEnvelopeItems
 {
+    SENTRY_LOG_DEBUG(@"Philipp: Before preparing Event");
+
     SentryEvent *preparedEvent = [self prepareEvent:event
                                           withScope:scope
                              alwaysAttachStacktrace:alwaysAttachStacktrace
                                        isCrashEvent:isCrashEvent];
 
     if (preparedEvent == nil) {
+        SENTRY_LOG_DEBUG(@"Philipp:  event is nil");
         return SentryId.empty;
     }
 
@@ -448,6 +457,8 @@ NSString *const DropSessionLogMessage = @"Session has no release name. Won't sen
                                                          forEvent:preparedEvent];
         }
     }
+
+    SENTRY_LOG_DEBUG(@"Philipp: Sending Event");
 
     [self.transportAdapter sendEvent:preparedEvent
                         traceContext:traceContext

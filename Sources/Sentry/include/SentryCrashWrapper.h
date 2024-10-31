@@ -19,6 +19,8 @@ SENTRY_NO_INIT
 
 - (BOOL)crashedLastLaunch;
 
+- (BOOL)crashedThisLaunch;
+
 - (NSTimeInterval)durationFromCrashStateInitToLastCrash;
 
 - (NSTimeInterval)activeDurationSinceLastCrash;

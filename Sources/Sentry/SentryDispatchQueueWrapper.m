@@ -1,8 +1,16 @@
 #import "SentryDispatchQueueWrapper.h"
+#import "SentryCrashWrapper.h"
+#import "SentryDependencyContainer.h"
+#import "SentryLog.h"
 #import "SentryThreadWrapper.h"
-#import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
+
+@interface SentryDispatchQueueWrapper ()
+
+@property (nonatomic, strong) SentryCrashWrapper *crashWrapper;
+
+@end
 
 @implementation SentryDispatchQueueWrapper
 
@@ -21,12 +29,18 @@ NS_ASSUME_NONNULL_BEGIN
 {
     if (self = [super init]) {
         _queue = dispatch_queue_create(name, attributes);
+        _crashWrapper = SentryDependencyContainer.sharedInstance.crashWrapper;
     }
     return self;
 }
 
 - (void)dispatchAsyncWithBlock:(void (^)(void))block
 {
+    if (_crashWrapper.crashedThisLaunch == YES) {
+        block();
+        return;
+    }
+
     dispatch_async(_queue, ^{
         @autoreleasepool {
             block();
@@ -54,6 +68,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)dispatchSyncOnMainQueue:(void (^)(void))block
 {
+    if (_crashWrapper.crashedThisLaunch == YES) {
+        block();
+        return;
+    }
+
     if ([NSThread isMainThread]) {
         block();
     } else {

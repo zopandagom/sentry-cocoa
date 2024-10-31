@@ -2,7 +2,7 @@ import _SentryPrivate
 import Foundation
 
 public class TestTransport: NSObject, Transport {
-    
+
     public var sentEnvelopes = Invocations<SentryEnvelope>()
     public func send(envelope: SentryEnvelope) {
         sentEnvelopes.record(envelope)

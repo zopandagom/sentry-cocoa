@@ -1,5 +1,6 @@
 #import "PrivateSentrySDKOnly.h"
 #import "SentryClient.h"
+#import "SentryCrashWrapper.h"
 #import "SentryDebugImageProvider+HybridSDKs.h"
 #import "SentryDependencyContainer.h"
 #import "SentryEvent+Private.h"
@@ -477,6 +478,12 @@ static BOOL appStartMeasurementRead;
         return;
     }
 
+    if (SentryDependencyContainer.sharedInstance.crashWrapper.crashedThisLaunch) {
+        SENTRY_LOG_DEBUG(@"Philipp: Crashed finish internal");
+        [self finishInternal];
+        return;
+    }
+
     BOOL hasUnfinishedChildSpansToWaitFor = [self hasUnfinishedChildSpansToWaitFor];
 
     @synchronized(self) {
@@ -613,7 +620,8 @@ static BOOL appStartMeasurementRead;
     SentryTransaction *transaction = [self toTransaction];
 
 #if SENTRY_TARGET_PROFILING_SUPPORTED
-    if (self.isProfiling) {
+    if (self.isProfiling
+        && !SentryDependencyContainer.sharedInstance.crashWrapper.crashedThisLaunch) {
         NSDate *startTimestamp;
 
 #    if SENTRY_HAS_UIKIT

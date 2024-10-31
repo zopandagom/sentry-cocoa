@@ -58,7 +58,7 @@ static SentryCrashMonitorType g_monitoring = SentryCrashMonitorTypeProductionSaf
 static char g_lastCrashReportFilePath[SentryCrashFU_MAX_PATH_LENGTH];
 static void (*g_saveScreenShot)(const char *) = 0;
 static void (*g_saveViewHierarchy)(const char *) = 0;
-
+static void (*g_onCrashCallback)(void) = 0;
 // ============================================================================
 #pragma mark - Utility -
 // ============================================================================
@@ -85,6 +85,10 @@ onCrash(struct SentryCrash_MonitorContext *monitorContext)
         strncpy(g_lastCrashReportFilePath, crashReportFilePath, sizeof(g_lastCrashReportFilePath));
         sentrycrashreport_writeStandardReport(monitorContext, crashReportFilePath);
         sentrySessionReplaySync_writeInfo();
+
+        if (g_onCrashCallback) {
+            g_onCrashCallback();
+        }
     }
 
     // Report is saved to disk, now we try to take screenshots
@@ -199,6 +203,12 @@ void
 sentrycrash_setSaveViewHierarchy(void (*callback)(const char *))
 {
     g_saveViewHierarchy = callback;
+}
+
+void
+sentrycrash_setOnCrashCallback(void (*callback)(void))
+{
+    g_onCrashCallback = callback;
 }
 
 void

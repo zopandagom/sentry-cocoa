@@ -280,11 +280,14 @@ NS_ASSUME_NONNULL_BEGIN
         return;
     }
 
+    SENTRY_LOG_DEBUG(@"Philipp: Capturing Transaction");
+
     // When a user calls finish on a transaction, which calls captureTransaction, the calling thread
     // here could be the main thread, which we only want to block as long as required. Therefore, we
     // capture the transaction on a background thread.
     __weak SentryHub *weakSelf = self;
     [self.dispatchQueue dispatchAsyncWithBlock:^{
+        SENTRY_LOG_DEBUG(@"Philipp: Capturing Transaction in block");
         [weakSelf captureEvent:transaction
                           withScope:scope
             additionalEnvelopeItems:additionalEnvelopeItems];
