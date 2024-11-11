@@ -182,20 +182,6 @@ NS_ASSUME_NONNULL_BEGIN
     NSString *locale = [[NSLocale autoupdatingCurrentLocale] objectForKey:NSLocaleIdentifier];
     [deviceData setValue:locale forKey:LOCALE_KEY];
 
-// The UIWindowScene is unavailable on visionOS
-#if SENTRY_TARGET_REPLAY_SUPPORTED
-
-    NSArray<UIWindow *> *appWindows = SentryDependencyContainer.sharedInstance.application.windows;
-    if ([appWindows count] > 0) {
-        UIScreen *appScreen = appWindows.firstObject.screen;
-        if (appScreen != nil) {
-            [deviceData setValue:@(appScreen.bounds.size.height) forKey:@"screen_height_pixels"];
-            [deviceData setValue:@(appScreen.bounds.size.width) forKey:@"screen_width_pixels"];
-        }
-    }
-
-#endif
-
     [scope setContextValue:deviceData forKey:DEVICE_KEY];
 
     // APP
