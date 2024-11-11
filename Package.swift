@@ -10,11 +10,11 @@ let package = Package(
         .library(name: "SentrySwiftUI", targets: ["Sentry", "SentrySwiftUI"])
     ],
     targets: [
-        .binaryTarget(
-                    name: "Sentry",
-                    url: "https://github.com/getsentry/sentry-cocoa/releases/download/8.38.0/Sentry.xcframework.zip",
-                    checksum: "e2467151decc3a20f1b2afd47486ff97afa5fdc99272817e3db1d491b8105caa" //Sentry-Static
-                ),
+        .target (
+                name: "Sentry",
+                dependencies: [],
+                path: "Sources/Sentry"
+          ),
         .binaryTarget(
                     name: "Sentry-Dynamic",
                     url: "https://github.com/getsentry/sentry-cocoa/releases/download/8.38.0/Sentry-Dynamic.xcframework.zip",
